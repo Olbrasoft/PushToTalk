@@ -24,14 +24,19 @@ dotnet publish -c Release -o ./publish
 ## Important Paths
 
 - Source: `src/`
+  - `PushToTalk.Core/` - Core logic and interfaces
+  - `PushToTalk.Linux/` - Linux-specific implementations
+  - `PushToTalk.App/` - Desktop application
+  - `PushToTalk.Service/` - Background service
 - Tests: `tests/`
+  - Each source project has its own test project
 - Solution: `PushToTalk.sln`
 
 ## Architecture
 
 - **Strategy Pattern** for mouse button monitoring (libevdev, udev, etc.)
 - **SOLID principles** - especially Single Responsibility and Dependency Inversion
-- Each source project has its own test project
+- Clean separation: Core (interfaces/models) -> Linux (platform) -> App/Service (UI/hosting)
 
 ## Testing Requirements
 

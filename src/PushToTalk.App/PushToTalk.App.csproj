@@ -1,0 +1,145 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <RuntimeIdentifier>linux-x64</RuntimeIdentifier>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>Olbrasoft.PushToTalk.App</RootNamespace>
+    <AssemblyName>speech-to-text</AssemblyName>
+    <!-- Emit source generator output to file for debugging -->
+    <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
+
+    <!-- Debian package metadata -->
+    <PackageId>speech-to-text</PackageId>
+    <Version>1.0.3</Version>
+    <Description>Voice transcription using Whisper AI</Description>
+    <Authors>Olbrasoft</Authors>
+    <DebMaintainer>Olbrasoft</DebMaintainer>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\PushToTalk.Core\PushToTalk.Core.csproj" />
+    <ProjectReference Include="..\PushToTalk.Linux\PushToTalk.Linux.csproj" />
+  </ItemGroup>
+
+  <!-- ASP.NET Core for embedded web server and SignalR -->
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Logging" Version="10.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="10.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Configuration" Version="10.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="10.0.0" />
+    <PackageReference Include="Packaging.Targets" Version="0.1.232">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+    <!-- D-Bus for StatusNotifierItem tray icon (fixes GNOME icon caching) -->
+    <PackageReference Include="Tmds.DBus.Protocol" Version="0.21.2" />
+    <PackageReference Include="Tmds.DBus.SourceGenerator" Version="0.0.21" PrivateAssets="all" />
+    <!-- SVG rendering for icon pixmaps -->
+    <PackageReference Include="Svg.Skia" Version="2.0.0.4" />
+    <PackageReference Include="SkiaSharp.NativeAssets.Linux.NoDependencies" Version="2.88.9" />
+  </ItemGroup>
+
+  <!-- D-Bus source generator needs this to see DBusGeneratorMode metadata -->
+  <ItemGroup>
+    <CompilerVisibleItemMetadata Include="AdditionalFiles" MetadataName="DBusGeneratorMode" />
+  </ItemGroup>
+
+  <!-- D-Bus XML interfaces for StatusNotifierItem and Menu -->
+  <ItemGroup>
+    <AdditionalFiles Include="DBusXml/org.freedesktop.DBus.xml" DBusGeneratorMode="Proxy" />
+    <AdditionalFiles Include="DBusXml/org.kde.StatusNotifierWatcher.xml" DBusGeneratorMode="Proxy" />
+    <AdditionalFiles Include="DBusXml/org.kde.StatusNotifierItem.xml" DBusGeneratorMode="Handler" />
+    <AdditionalFiles Include="DBusXml/com.canonical.dbusmenu.xml" DBusGeneratorMode="Handler" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="appsettings.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="text-filters.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+  <!-- Copy icons from assets to output -->
+  <ItemGroup>
+    <None Include="..\..\assets\icons\*.svg" Link="icons\%(Filename)%(Extension)">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+  <!-- Copy sounds to output -->
+  <ItemGroup>
+    <None Include="sounds\*.mp3" Link="sounds\%(Filename)%(Extension)">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+  <!-- Copy wwwroot for web remote control -->
+  <ItemGroup>
+    <None Include="wwwroot\**\*" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <!-- Freedesktop files for debian package -->
+  <ItemGroup>
+    <!-- Desktop entry -->
+    <Content Include="..\..\data\io.olbrasoft.PushToTalk.desktop">
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+      <LinuxPath>/usr/share/applications/io.olbrasoft.PushToTalk.desktop</LinuxPath>
+    </Content>
+
+    <!-- AppStream metainfo -->
+    <Content Include="..\..\data\io.olbrasoft.PushToTalk.metainfo.xml">
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+      <LinuxPath>/usr/share/metainfo/io.olbrasoft.PushToTalk.metainfo.xml</LinuxPath>
+    </Content>
+
+    <!-- Icons - scalable -->
+    <Content Include="..\..\data\icons\hicolor\scalable\apps\io.olbrasoft.PushToTalk.svg">
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+      <LinuxPath>/usr/share/icons/hicolor/scalable/apps/io.olbrasoft.PushToTalk.svg</LinuxPath>
+    </Content>
+
+    <!-- Icons - various sizes (Link with unique paths to avoid conflicts) -->
+    <Content Include="..\..\data\icons\hicolor\16x16\apps\io.olbrasoft.PushToTalk.png" Link="icons\16x16\io.olbrasoft.PushToTalk.png">
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+      <LinuxPath>/usr/share/icons/hicolor/16x16/apps/io.olbrasoft.PushToTalk.png</LinuxPath>
+    </Content>
+    <Content Include="..\..\data\icons\hicolor\22x22\apps\io.olbrasoft.PushToTalk.png" Link="icons\22x22\io.olbrasoft.PushToTalk.png">
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+      <LinuxPath>/usr/share/icons/hicolor/22x22/apps/io.olbrasoft.PushToTalk.png</LinuxPath>
+    </Content>
+    <Content Include="..\..\data\icons\hicolor\24x24\apps\io.olbrasoft.PushToTalk.png" Link="icons\24x24\io.olbrasoft.PushToTalk.png">
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+      <LinuxPath>/usr/share/icons/hicolor/24x24/apps/io.olbrasoft.PushToTalk.png</LinuxPath>
+    </Content>
+    <Content Include="..\..\data\icons\hicolor\32x32\apps\io.olbrasoft.PushToTalk.png" Link="icons\32x32\io.olbrasoft.PushToTalk.png">
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+      <LinuxPath>/usr/share/icons/hicolor/32x32/apps/io.olbrasoft.PushToTalk.png</LinuxPath>
+    </Content>
+    <Content Include="..\..\data\icons\hicolor\48x48\apps\io.olbrasoft.PushToTalk.png" Link="icons\48x48\io.olbrasoft.PushToTalk.png">
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+      <LinuxPath>/usr/share/icons/hicolor/48x48/apps/io.olbrasoft.PushToTalk.png</LinuxPath>
+    </Content>
+    <Content Include="..\..\data\icons\hicolor\64x64\apps\io.olbrasoft.PushToTalk.png" Link="icons\64x64\io.olbrasoft.PushToTalk.png">
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+      <LinuxPath>/usr/share/icons/hicolor/64x64/apps/io.olbrasoft.PushToTalk.png</LinuxPath>
+    </Content>
+    <Content Include="..\..\data\icons\hicolor\128x128\apps\io.olbrasoft.PushToTalk.png" Link="icons\128x128\io.olbrasoft.PushToTalk.png">
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+      <LinuxPath>/usr/share/icons/hicolor/128x128/apps/io.olbrasoft.PushToTalk.png</LinuxPath>
+    </Content>
+    <Content Include="..\..\data\icons\hicolor\256x256\apps\io.olbrasoft.PushToTalk.png" Link="icons\256x256\io.olbrasoft.PushToTalk.png">
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+      <LinuxPath>/usr/share/icons/hicolor/256x256/apps/io.olbrasoft.PushToTalk.png</LinuxPath>
+    </Content>
+  </ItemGroup>
+
+</Project>
