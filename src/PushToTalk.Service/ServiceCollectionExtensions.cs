@@ -29,7 +29,6 @@ public static class ServiceCollectionExtensions
         var ggmlModelPath = configuration.GetValue<string>("PushToTalkDictation:GgmlModelPath")
             ?? Path.Combine(AppContext.BaseDirectory, "models", "ggml-medium.bin");
         var whisperLanguage = configuration.GetValue<string>("PushToTalkDictation:WhisperLanguage") ?? "cs";
-        var bluetoothTripleClickCommand = configuration.GetValue<string?>("BluetoothMouse:TripleClickCommand");
 
         // SignalR
         services.AddSignalR();
@@ -123,24 +122,6 @@ public static class ServiceCollectionExtensions
 
         // HTTP client for DictationWorker
         services.AddHttpClient<DictationWorker>();
-
-        // Bluetooth mouse monitor (remote push-to-talk trigger)
-        services.AddSingleton(sp =>
-        {
-            var logger = sp.GetRequiredService<ILogger<BluetoothMouseMonitor>>();
-            var keyboardMonitor = sp.GetRequiredService<IKeyboardMonitor>();
-            var keySimulator = sp.GetRequiredService<IKeySimulator>();
-            return new BluetoothMouseMonitor(logger, keyboardMonitor, keySimulator, "BluetoothMouse3600", bluetoothTripleClickCommand);
-        });
-
-        // USB Optical Mouse monitor (secondary push-to-talk trigger)
-        services.AddSingleton(sp =>
-        {
-            var logger = sp.GetRequiredService<ILogger<UsbMouseMonitor>>();
-            var keyboardMonitor = sp.GetRequiredService<IKeyboardMonitor>();
-            var keySimulator = sp.GetRequiredService<IKeySimulator>();
-            return new UsbMouseMonitor(logger, keyboardMonitor, keySimulator);
-        });
 
         // Register worker as singleton first (so we can resolve it for interfaces)
         services.AddSingleton<DictationWorker>();
