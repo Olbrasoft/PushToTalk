@@ -219,7 +219,7 @@ public class DBusTrayIcon : IDisposable
     /// <summary>
     /// Sets the tray icon from an SVG file name (without path and extension).
     /// </summary>
-    /// <param name="iconName">Icon name, e.g., "trigger-speech-to-text"</param>
+    /// <param name="iconName">Icon name, e.g., "trigger-ptt"</param>
     public void SetIcon(string iconName)
     {
         if (_isDisposed)

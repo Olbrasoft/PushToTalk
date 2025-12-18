@@ -7,12 +7,12 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <RootNamespace>Olbrasoft.PushToTalk.App</RootNamespace>
-    <AssemblyName>speech-to-text</AssemblyName>
+    <AssemblyName>push-to-talk</AssemblyName>
     <!-- Emit source generator output to file for debugging -->
     <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
 
     <!-- Debian package metadata -->
-    <PackageId>speech-to-text</PackageId>
+    <PackageId>push-to-talk</PackageId>
     <Version>1.0.3</Version>
     <Description>Voice transcription using Whisper AI</Description>
     <Authors>Olbrasoft</Authors>

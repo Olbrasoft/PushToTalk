@@ -9,7 +9,7 @@
     <UserSecretsId>dotnet-Olbrasoft.PushToTalk.Service-20251213</UserSecretsId>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <NoWarn>$(NoWarn);1591</NoWarn>
-    <PublishDir>/home/jirka/speech-to-text/</PublishDir>
+    <PublishDir>/home/jirka/push-to-talk/</PublishDir>
   </PropertyGroup>
 
   <ItemGroup>

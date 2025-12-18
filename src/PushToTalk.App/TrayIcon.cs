@@ -21,9 +21,9 @@ public class TrayIcon : IDisposable
     private bool _disposed;
 
     // Icon file names (without path)
-    private const string IconIdle = "trigger-speech-to-text";
-    private const string IconRecording = "trigger-speech-to-text-recording"; // Orange icon for recording
-    private const string IconOff = "text-to-speech-off";
+    private const string IconIdle = "trigger-ptt";
+    private const string IconRecording = "trigger-ptt-recording"; // Orange icon for recording
+    private const string IconOff = "tts-off";
 
     // Animation settings (CancellationToken-based for reliable cancellation)
     private const int AnimationIntervalMs = 200;
@@ -102,7 +102,7 @@ public class TrayIcon : IDisposable
         _logger.LogInformation("Setting icon theme path: {Path}", _iconsPath);
 
         _indicator = AppIndicator.app_indicator_new(
-            "speech-to-text",
+            "push-to-talk",
             IconIdle,  // Use icon name only, not full path
             AppIndicator.Category.ApplicationStatus);
         
@@ -113,7 +113,7 @@ public class TrayIcon : IDisposable
         {
             throw new InvalidOperationException("Failed to create app indicator");
         }
-        AppIndicator.app_indicator_set_title(_indicator, "Speech to Text");
+        AppIndicator.app_indicator_set_title(_indicator, "Push To Talk");
 
         // Start as ACTIVE (visible)
         AppIndicator.app_indicator_set_status(_indicator, AppIndicator.Status.Active);
@@ -406,7 +406,7 @@ public class TrayIcon : IDisposable
             var version = typeof(Program).Assembly.GetName().Version;
             var versionString = version != null ? $"{version.Major}.{version.Minor}.{version.Build}" : "1.0.0";
 
-            Gtk.gtk_about_dialog_set_program_name(dialog, "Speech to Text");
+            Gtk.gtk_about_dialog_set_program_name(dialog, "Push To Talk");
             Gtk.gtk_about_dialog_set_version(dialog, versionString);
             Gtk.gtk_about_dialog_set_comments(dialog,
                 "Voice dictation application for Linux.\n" +
