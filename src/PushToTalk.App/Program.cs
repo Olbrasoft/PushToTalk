@@ -199,8 +199,8 @@ try
         Console.WriteLine("D-Bus tray icon initialized");
 
         // Set initial icon
-        dbusTrayIcon.SetIcon("trigger-speech-to-text");
-        dbusTrayIcon.SetTooltip("Speech to Text - Idle");
+        dbusTrayIcon.SetIcon("trigger-ptt");
+        dbusTrayIcon.SetTooltip("Push To Talk - Idle");
 
         // Handle state changes from DictationService
         // Main icon stays visible, animated icon shows NEXT TO it during transcription (issue #62)
@@ -211,16 +211,16 @@ try
             {
                 case DictationState.Idle:
                     animatedIcon.Hide();
-                    dbusTrayIcon.SetIcon("trigger-speech-to-text");
-                    dbusTrayIcon.SetTooltip("Speech to Text - Idle");
+                    dbusTrayIcon.SetIcon("trigger-ptt");
+                    dbusTrayIcon.SetTooltip("Push To Talk - Idle");
                     break;
                 case DictationState.Recording:
                     animatedIcon.Hide();
-                    dbusTrayIcon.SetIcon("trigger-speech-to-text-recording");
-                    dbusTrayIcon.SetTooltip("Speech to Text - Recording...");
+                    dbusTrayIcon.SetIcon("trigger-ptt-recording");
+                    dbusTrayIcon.SetTooltip("Push To Talk - Recording...");
                     break;
                 case DictationState.Transcribing:
-                    dbusTrayIcon.SetTooltip("Speech to Text - Transcribing...");
+                    dbusTrayIcon.SetTooltip("Push To Talk - Transcribing...");
                     // Show animated icon NEXT TO main icon (main stays visible)
                     await animatedIcon.ShowAsync();
                     break;
