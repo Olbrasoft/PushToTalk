@@ -1,3 +1,4 @@
+using System.IO;
 using Microsoft.Extensions.Logging;
 using Tmds.DBus.SourceGenerator;
 using Tmds.DBus.Protocol;
@@ -237,9 +238,13 @@ public class DBusTrayIcon : IDisposable
                 _logger.LogDebug("Set icon: {IconName} ({Width}x{Height})", iconName, _currentIcon.Item1, _currentIcon.Item2);
             }
         }
-        catch (Exception ex)
+        catch (FileNotFoundException ex)
         {
-            _logger.LogError(ex, "Failed to set icon: {IconName}", iconName);
+            _logger.LogError(ex, "Icon file not found: {IconName}", iconName);
+        }
+        catch (InvalidOperationException ex)
+        {
+            _logger.LogError(ex, "Invalid icon operation: {IconName}", iconName);
         }
     }
 
@@ -260,9 +265,13 @@ public class DBusTrayIcon : IDisposable
                 _sniHandler.SetAttentionIcon(pixmap.Value);
             }
         }
-        catch (Exception ex)
+        catch (FileNotFoundException ex)
         {
-            _logger.LogError(ex, "Failed to set attention icon: {IconName}", iconName);
+            _logger.LogError(ex, "Attention icon file not found: {IconName}", iconName);
+        }
+        catch (InvalidOperationException ex)
+        {
+            _logger.LogError(ex, "Invalid attention icon operation: {IconName}", iconName);
         }
     }
 
