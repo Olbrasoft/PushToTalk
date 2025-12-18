@@ -50,15 +50,6 @@ var trayLogger = app.Services.GetRequiredService<ILogger<TranscriptionTrayServic
 var typingSoundPlayer = app.Services.GetRequiredService<TypingSoundPlayer>();
 var trayService = new TranscriptionTrayService(trayLogger, pttNotifier, typingSoundPlayer);
 
-// Start mouse monitors
-var bluetoothMouseMonitor = app.Services.GetRequiredService<BluetoothMouseMonitor>();
-_ = bluetoothMouseMonitor.StartMonitoringAsync(cts.Token);
-Console.WriteLine("Bluetooth mouse monitor started (LEFT=CapsLock, 2xLEFT=ESC, 3xLEFT=OpenCode, 2xRIGHT=Ctrl+Shift+V, 3xRIGHT=Ctrl+C, MIDDLE=Enter)");
-
-var usbMouseMonitor = app.Services.GetRequiredService<UsbMouseMonitor>();
-_ = usbMouseMonitor.StartMonitoringAsync(cts.Token);
-Console.WriteLine("USB mouse monitor started (LEFT=CapsLock, 2xLEFT=ESC, 2xRIGHT=Ctrl+Shift+V, 3xRIGHT=Ctrl+C)");
-
 try
 {
     // Initialize tray (must be on main thread for GTK)
@@ -115,8 +106,6 @@ catch (Exception ex)
 }
 finally
 {
-    bluetoothMouseMonitor.Dispose();
-    usbMouseMonitor.Dispose();
     trayService.Dispose();
     app.DisposeAsync().AsTask().Wait();
     cts.Dispose();
