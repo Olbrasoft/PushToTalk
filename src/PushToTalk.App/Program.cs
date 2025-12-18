@@ -223,6 +223,8 @@ try
                     dbusTrayIcon.SetTooltip("Push To Talk - Recording...");
                     break;
                 case DictationState.Transcribing:
+                    // Change icon back to white immediately when recording stops (issue #28)
+                    dbusTrayIcon.SetIcon("trigger-ptt");
                     dbusTrayIcon.SetTooltip("Push To Talk - Transcribing...");
                     // Show animated icon NEXT TO main icon (main stays visible)
                     await animatedIcon.ShowAsync();
