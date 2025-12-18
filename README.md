@@ -1,5 +1,7 @@
 # PushToTalk
 
+[![Auto Deploy](https://img.shields.io/badge/auto--deploy-enabled-green)](https://github.com/Olbrasoft/PushToTalk)
+
 Push-to-Talk functionality for Linux voice assistant. Monitors mouse buttons and triggers speech-to-text recording.
 
 ## Getting Started
