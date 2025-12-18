@@ -1,5 +1,6 @@
 using Olbrasoft.PushToTalk;
 using Olbrasoft.PushToTalk.Audio;
+using Olbrasoft.PushToTalk.Core.Configuration;
 using Olbrasoft.PushToTalk.Service;
 using Olbrasoft.PushToTalk.Service.Services;
 using Olbrasoft.PushToTalk.Service.Tray;
@@ -48,7 +49,10 @@ app.MapPushToTalkEndpoints();
 var pttNotifier = app.Services.GetRequiredService<IPttNotifier>();
 var trayLogger = app.Services.GetRequiredService<ILogger<TranscriptionTrayService>>();
 var typingSoundPlayer = app.Services.GetRequiredService<TypingSoundPlayer>();
-var trayService = new TranscriptionTrayService(trayLogger, pttNotifier, typingSoundPlayer);
+var trayService = new TranscriptionTrayService(trayLogger, pttNotifier, typingSoundPlayer, builder.Configuration);
+
+// Get web server port from configuration
+var webPort = builder.Configuration.GetValue<int>("WebServer:Port", ServiceEndpoints.DefaultWebServerPort);
 
 try
 {
@@ -64,7 +68,7 @@ try
     Console.WriteLine("╚══════════════════════════════════════════════════════════════╝");
     Console.WriteLine();
     Console.WriteLine("Transcription tray icon initialized");
-    Console.WriteLine("API listening on http://localhost:5050");
+    Console.WriteLine($"API listening on http://localhost:{webPort}");
 
     // Start WebApplication in background
     var hostTask = Task.Run(async () =>
