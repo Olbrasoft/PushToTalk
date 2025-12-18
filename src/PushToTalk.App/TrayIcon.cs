@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Logging;
+using Olbrasoft.PushToTalk.Core.Extensions;
 using Olbrasoft.PushToTalk.Interop;
 
 namespace Olbrasoft.PushToTalk.App;
@@ -195,7 +196,7 @@ public class TrayIcon : IDisposable
         _startCallback = (widget, data) =>
         {
             _logger.LogInformation("Start Dictation clicked");
-            _ = Task.Run(() => _dictationService.StartDictationAsync());
+            Task.Run(() => _dictationService.StartDictationAsync()).FireAndForget(_logger, "StartDictation");
         };
         GObject.g_signal_connect_data(_startItem, "activate", _startCallback, IntPtr.Zero, IntPtr.Zero, 0);
 
@@ -207,7 +208,7 @@ public class TrayIcon : IDisposable
         _stopCallback = (widget, data) =>
         {
             _logger.LogInformation("Stop Dictation clicked");
-            _ = Task.Run(() => _dictationService.StopDictationAsync());
+            Task.Run(() => _dictationService.StopDictationAsync()).FireAndForget(_logger, "StopDictation");
         };
         GObject.g_signal_connect_data(_stopItem, "activate", _stopCallback, IntPtr.Zero, IntPtr.Zero, 0);
 

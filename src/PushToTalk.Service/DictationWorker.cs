@@ -1,4 +1,5 @@
 using Olbrasoft.PushToTalk.Audio;
+using Olbrasoft.PushToTalk.Core.Extensions;
 using Olbrasoft.PushToTalk.Service.Services;
 
 namespace Olbrasoft.PushToTalk.Service;
@@ -151,7 +152,7 @@ public class DictationWorker : BackgroundService, IRecordingStateProvider, IReco
         // Handle ScrollLock (ManualMute) - toggle on key release
         if (e.Key == KeyCode.ScrollLock)
         {
-            _ = Task.Run(async () => await HandleScrollLockPressedAsync());
+            Task.Run(async () => await HandleScrollLockPressedAsync()).FireAndForget(_logger, "HandleScrollLockPressed");
             return;
         }
 
@@ -181,13 +182,13 @@ public class DictationWorker : BackgroundService, IRecordingStateProvider, IReco
         {
             // CapsLock is ON and not recording - start recording
             _logger.LogInformation("CapsLock ON - starting dictation");
-            _ = Task.Run(async () => await StartRecordingAsync());
+            Task.Run(async () => await StartRecordingAsync()).FireAndForget(_logger, "StartRecording");
         }
         else if (!capsLockOn && _isRecording)
         {
             // CapsLock is OFF and recording - stop and transcribe
             _logger.LogInformation("CapsLock OFF - stopping dictation");
-            _ = Task.Run(async () => await StopRecordingAsync());
+            Task.Run(async () => await StopRecordingAsync()).FireAndForget(_logger, "StopRecording");
         }
         else
         {
@@ -283,7 +284,7 @@ public class DictationWorker : BackgroundService, IRecordingStateProvider, IReco
                     else if (result.WasHallucination)
                     {
                         // Play rejection sound for hallucination
-                        _ = Task.Run(async () => await _textOutputService.PlayRejectionSoundAsync());
+                        Task.Run(async () => await _textOutputService.PlayRejectionSoundAsync()).FireAndForget(_logger, "PlayRejectionSound");
                         await _pttNotifier.NotifyTranscriptionFailedAsync(result.ErrorMessage ?? "Whisper hallucination filtered");
                     }
                     else
@@ -297,7 +298,7 @@ public class DictationWorker : BackgroundService, IRecordingStateProvider, IReco
                     _logger.LogInformation("Transcription cancelled by user (Escape key pressed)");
 
                     // Play rejection sound for cancellation
-                    _ = Task.Run(async () => await _textOutputService.PlayRejectionSoundAsync());
+                    Task.Run(async () => await _textOutputService.PlayRejectionSoundAsync()).FireAndForget(_logger, "PlayRejectionSound");
 
                     await _pttNotifier.NotifyTranscriptionFailedAsync("Transcription cancelled");
                 }
@@ -313,7 +314,7 @@ public class DictationWorker : BackgroundService, IRecordingStateProvider, IReco
                 _logger.LogWarning("No audio data recorded");
 
                 // Play rejection sound for empty recording
-                _ = Task.Run(async () => await _textOutputService.PlayRejectionSoundAsync());
+                Task.Run(async () => await _textOutputService.PlayRejectionSoundAsync()).FireAndForget(_logger, "PlayRejectionSound");
 
                 await _pttNotifier.NotifyTranscriptionFailedAsync("No audio data recorded");
             }

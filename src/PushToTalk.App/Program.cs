@@ -9,6 +9,7 @@ using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Logging;
 using Olbrasoft.PushToTalk.App;
 using Olbrasoft.PushToTalk.App.Hubs;
+using Olbrasoft.PushToTalk.Core.Extensions;
 using Olbrasoft.PushToTalk.TextInput;
 
 // Single instance check
@@ -278,7 +279,7 @@ try
     }
 
     // Start web server in background
-    _ = Task.Run(async () =>
+    Task.Run(async () =>
     {
         try
         {
@@ -290,13 +291,13 @@ try
         {
             // Normal shutdown
         }
-    });
+    }).FireAndForget(logger, "WebServer");
 
     Console.WriteLine($"Web server started on http://localhost:{webPort}");
     Console.WriteLine($"Remote control: http://localhost:{webPort}/remote.html");
 
     // Start keyboard monitoring in background
-    _ = Task.Run(async () =>
+    Task.Run(async () =>
     {
         try
         {
@@ -310,7 +311,7 @@ try
         {
             logger.LogError(ex, "Keyboard monitoring failed");
         }
-    });
+    }).FireAndForget(logger, "KeyboardMonitoring");
 
     var triggerKey = options.GetTriggerKeyCode();
     Console.WriteLine($"Keyboard monitoring started ({triggerKey} to trigger)");

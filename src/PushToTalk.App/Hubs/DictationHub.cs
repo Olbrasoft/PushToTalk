@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Logging;
+using Olbrasoft.PushToTalk.Core.Extensions;
 using Olbrasoft.PushToTalk.TextInput;
 
 namespace Olbrasoft.PushToTalk.App.Hubs;
@@ -58,7 +59,7 @@ public class DictationHub : Hub
         {
             // Fire-and-forget: don't await so the hub method returns immediately
             // This allows the client to call CancelTranscription while transcription is running
-            _ = Task.Run(() => _dictationService.StopDictationAsync());
+            Task.Run(() => _dictationService.StopDictationAsync()).FireAndForget(_logger, "StopDictation");
         }
         return Task.CompletedTask;
     }
@@ -71,13 +72,13 @@ public class DictationHub : Hub
         if (_dictationService.State == DictationState.Idle)
         {
             // StartDictationAsync is already non-blocking
-            _ = Task.Run(() => _dictationService.StartDictationAsync());
+            Task.Run(() => _dictationService.StartDictationAsync()).FireAndForget(_logger, "StartDictation");
         }
         else if (_dictationService.State == DictationState.Recording)
         {
             // Fire-and-forget: don't await so the hub method returns immediately
             // This allows the client to call CancelTranscription while transcription is running
-            _ = Task.Run(() => _dictationService.StopDictationAsync());
+            Task.Run(() => _dictationService.StopDictationAsync()).FireAndForget(_logger, "StopDictation");
         }
         return Task.CompletedTask;
     }
@@ -100,7 +101,7 @@ public class DictationHub : Hub
         _logger.LogInformation("SendEnter called from client {ConnectionId}", Context.ConnectionId);
         // Fire-and-forget so the hub returns immediately
         // Note: dotool uses "enter" (lowercase), not "Return"
-        _ = Task.Run(() => _textTyper.SendKeyAsync("enter"));
+        Task.Run(() => _textTyper.SendKeyAsync("enter")).FireAndForget(_logger, "SendEnter");
         return Task.CompletedTask;
     }
 }
