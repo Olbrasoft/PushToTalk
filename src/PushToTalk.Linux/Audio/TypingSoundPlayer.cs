@@ -5,7 +5,7 @@ namespace Olbrasoft.PushToTalk.Audio;
 
 /// <summary>
 /// Service for playing typing sound during transcription.
-/// Uses pw-play (PipeWire) or paplay (PulseAudio) to play audio.
+/// Uses pw-cat (PipeWire) or paplay (PulseAudio) to play audio.
 /// </summary>
 public class TypingSoundPlayer : IDisposable
 {
@@ -217,7 +217,7 @@ public class TypingSoundPlayer : IDisposable
 
         if (string.IsNullOrEmpty(player))
         {
-            _logger.LogWarning("No audio player available (tried pw-play, paplay)");
+            _logger.LogWarning("No audio player available (tried pw-cat, paplay)");
             return;
         }
 
@@ -262,14 +262,14 @@ public class TypingSoundPlayer : IDisposable
         if (_cachedPlayer != null)
             return _cachedPlayer;
 
-        // Check for pw-play (PipeWire)
-        if (await IsCommandAvailableAsync("pw-play"))
+        // Check for pw-cat (PipeWire) - pw-play is just a symlink to pw-cat
+        if (await IsCommandAvailableAsync("pw-cat"))
         {
-            _cachedPlayer = "pw-play";
+            _cachedPlayer = "pw-cat";
             return _cachedPlayer;
         }
 
-        // Check for paplay (PulseAudio)
+        // Fallback to paplay (PulseAudio) for systems without PipeWire
         if (await IsCommandAvailableAsync("paplay"))
         {
             _cachedPlayer = "paplay";

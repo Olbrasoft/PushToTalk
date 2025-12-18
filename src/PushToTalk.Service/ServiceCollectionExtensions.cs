@@ -68,8 +68,8 @@ public static class ServiceCollectionExtensions
 
         services.AddSingleton<IAudioRecorder>(sp =>
         {
-            var logger = sp.GetRequiredService<ILogger<AlsaAudioRecorder>>();
-            return new AlsaAudioRecorder(logger);
+            var logger = sp.GetRequiredService<ILogger<PipeWireAudioRecorder>>();
+            return new PipeWireAudioRecorder(logger);
         });
 
         services.AddSingleton<ISpeechTranscriber>(sp =>
