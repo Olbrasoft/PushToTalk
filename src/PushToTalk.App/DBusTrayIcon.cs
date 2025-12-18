@@ -181,11 +181,27 @@ public class DBusTrayIcon : IDisposable
             _sysTrayServiceName = _connection.UniqueName!;
             await _statusNotifierWatcher.RegisterStatusNotifierItemAsync(_sysTrayServiceName);
 
+            // Small delay to allow GNOME Shell's appindicator extension to connect
+            // before we emit initial icon signals
+            await Task.Delay(100);
+
             // Set initial state
             _sniHandler.SetTitleAndTooltip(_tooltipText);
             _sniHandler.SetIcon(_currentIcon);
 
             _logger.LogInformation("Tray icon registered as {ServiceName}", _sysTrayServiceName);
+
+            // Emit signals again after another delay to ensure GNOME Shell catches them
+            // (some shells need extra time to fully initialize the icon)
+            _ = Task.Run(async () =>
+            {
+                await Task.Delay(500);
+                if (!_isDisposed && _sniHandler?.PathHandler is not null)
+                {
+                    _sniHandler.SetIcon(_currentIcon);
+                    _logger.LogDebug("Re-emitted icon signal after delay");
+                }
+            });
         }
         catch (Exception ex)
         {
