@@ -2,12 +2,13 @@ using System.Text;
 using System.Text.Json;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using Olbrasoft.PushToTalk.Core.Configuration;
 
 namespace Olbrasoft.PushToTalk.Service.Services;
 
 /// <summary>
 /// HTTP-based TTS control service implementation.
-/// Communicates with EdgeTTS (port 5555) and VirtualAssistant (port 5055) services.
+/// Communicates with EdgeTTS and VirtualAssistant services.
 /// </summary>
 public class TtsControlService : ITtsControlService
 {
@@ -30,10 +31,13 @@ public class TtsControlService : ITtsControlService
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         _httpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
 
+        var endpoints = new ServiceEndpoints();
+        configuration?.GetSection(ServiceEndpoints.SectionName).Bind(endpoints);
+
         _edgeTtsBaseUrl = configuration?.GetValue<string>("EdgeTts:BaseUrl")
-            ?? "http://localhost:5555";
+            ?? endpoints.EdgeTts;
         _virtualAssistantBaseUrl = configuration?.GetValue<string>("VirtualAssistant:BaseUrl")
-            ?? "http://localhost:5055";
+            ?? endpoints.VirtualAssistant;
     }
 
     /// <inheritdoc/>

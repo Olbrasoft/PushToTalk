@@ -9,6 +9,7 @@ using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Logging;
 using Olbrasoft.PushToTalk.App;
 using Olbrasoft.PushToTalk.App.Hubs;
+using Olbrasoft.PushToTalk.Core.Configuration;
 using Olbrasoft.PushToTalk.Core.Extensions;
 using Olbrasoft.PushToTalk.TextInput;
 
@@ -32,7 +33,7 @@ var options = new DictationOptions();
 config.GetSection(DictationOptions.SectionName).Bind(options);
 
 // Get port from config or use default
-var webPort = config.GetValue<int>("WebServer:Port", 5050);
+var webPort = config.GetValue<int>("WebServer:Port", ServiceEndpoints.DefaultWebServerPort);
 
 // Setup logging
 using var loggerFactory = LoggerFactory.Create(builder =>
