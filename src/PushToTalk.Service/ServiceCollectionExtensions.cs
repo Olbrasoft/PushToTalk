@@ -120,6 +120,9 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<ITextOutputService, TextOutputService>();
         services.AddSingleton<IRecordingModeManager, RecordingModeManager>();
 
+        // Recording workflow (extracted from DictationWorker for SRP)
+        services.AddSingleton<IRecordingWorkflow, RecordingWorkflow>();
+
         // HTTP client for DictationWorker
         services.AddHttpClient<DictationWorker>();
 
