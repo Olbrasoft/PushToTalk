@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>PushToTalk Remote</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            color: #e0e0e0;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+        }
+
+        h1 {
+            font-size: 1.5rem;
+            margin-bottom: 10px;
+            color: #fff;
+        }
+
+        .status-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 20px;
+            border-radius: 20px;
+            background: rgba(255,255,255,0.1);
+            margin-bottom: 30px;
+            font-size: 0.9rem;
+        }
+
+        .status-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #666;
+            transition: all 0.3s ease;
+        }
+
+        .status-dot.connected {
+            background: #4caf50;
+            box-shadow: 0 0 10px #4caf50;
+        }
+
+        .status-dot.recording {
+            background: #f44336;
+            box-shadow: 0 0 10px #f44336;
+            animation: pulse 1s infinite;
+        }
+
+        .status-dot.transcribing {
+            background: #ff9800;
+            box-shadow: 0 0 10px #ff9800;
+            animation: pulse 0.5s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .controls {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .btn {
+            padding: 20px 40px;
+            font-size: 1.2rem;
+            font-weight: 600;
+            border: none;
+            border-radius: 15px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .btn:active {
+            transform: scale(0.95);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .btn-start {
+            background: linear-gradient(135deg, #4caf50 0%, #45a049 100%);
+            color: white;
+        }
+
+        .btn-start:hover:not(:disabled) {
+            background: linear-gradient(135deg, #45a049 0%, #3d9142 100%);
+        }
+
+        .btn-stop {
+            background: linear-gradient(135deg, #f44336 0%, #d32f2f 100%);
+            color: white;
+        }
+
+        .btn-stop:hover:not(:disabled) {
+            background: linear-gradient(135deg, #d32f2f 0%, #c62828 100%);
+        }
+
+        .btn-toggle {
+            background: linear-gradient(135deg, #2196f3 0%, #1976d2 100%);
+            color: white;
+            padding: 25px 40px;
+            font-size: 1.4rem;
+        }
+
+        .btn-toggle:hover:not(:disabled) {
+            background: linear-gradient(135deg, #1976d2 0%, #1565c0 100%);
+        }
+
+        .btn-toggle.recording {
+            background: linear-gradient(135deg, #f44336 0%, #d32f2f 100%);
+        }
+
+        .transcription-box {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 15px;
+            padding: 20px;
+            min-height: 100px;
+            text-align: left;
+        }
+
+        .transcription-box h3 {
+            font-size: 0.8rem;
+            color: #888;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .transcription-text {
+            font-size: 1rem;
+            line-height: 1.5;
+            color: #fff;
+            word-wrap: break-word;
+        }
+
+        .transcription-text.empty {
+            color: #666;
+            font-style: italic;
+        }
+
+        .connection-status {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            padding: 5px 10px;
+            border-radius: 10px;
+            font-size: 0.7rem;
+            background: rgba(0,0,0,0.5);
+        }
+
+        .connection-status.connected {
+            color: #4caf50;
+        }
+
+        .connection-status.disconnected {
+            color: #f44336;
+        }
+
+        .duration {
+            font-size: 2rem;
+            font-weight: bold;
+            margin: 20px 0;
+            font-variant-numeric: tabular-nums;
+            color: #fff;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .duration.visible {
+            opacity: 1;
+        }
+    </style>
+</head>
+<body>
+    <div class="connection-status disconnected" id="connectionStatus">Odpojeno</div>
+
+    <div class="container">
+        <h1>PushToTalk Remote</h1>
+
+        <div class="status-indicator">
+            <span class="status-dot" id="statusDot"></span>
+            <span id="statusText">Nepripojeno</span>
+        </div>
+
+        <div class="duration" id="duration">00:00</div>
+
+        <div class="controls">
+            <button class="btn btn-toggle" id="btnToggle" disabled>
+                <span id="toggleIcon">&#9658;</span>
+                <span id="toggleText">Zacit</span>
+            </button>
+
+            <div style="display: flex; gap: 15px;">
+                <button class="btn btn-start" id="btnStart" disabled style="flex: 1;">
+                    &#9658; Start
+                </button>
+                <button class="btn btn-stop" id="btnStop" disabled style="flex: 1;">
+                    &#9632; Stop
+                </button>
+            </div>
+        </div>
+
+        <div class="transcription-box">
+            <h3>Posledni prepis</h3>
+            <div class="transcription-text empty" id="transcriptionText">Zadny prepis</div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.0/signalr.min.js"></script>
+    <script src="remote.js"></script>
+</body>
+</html>

@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <RootNamespace>Olbrasoft.PushToTalk.Linux</RootNamespace>
+    <AssemblyName>Olbrasoft.PushToTalk.Linux</AssemblyName>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <NoWarn>$(NoWarn);1591</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Olbrasoft.PushToTalk.Linux.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.0" />
+    <PackageReference Include="NAudio" Version="2.2.1" />
+    <!-- Whisper.net for speech recognition with CUDA GPU acceleration -->
+    <PackageReference Include="Whisper.net" Version="1.9.0" />
+    <PackageReference Include="Whisper.net.Runtime.Cuda.Linux" Version="1.9.0" />
+    <PackageReference Include="Whisper.net.Runtime" Version="1.9.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\PushToTalk.Core\PushToTalk.Core.csproj" />
+  </ItemGroup>
+
+</Project>
