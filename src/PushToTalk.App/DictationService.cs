@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Logging;
 using Olbrasoft.PushToTalk.App.Services;
 using Olbrasoft.PushToTalk.Audio;
+using Olbrasoft.PushToTalk.Core.Extensions;
 using Olbrasoft.PushToTalk.Speech;
 using Olbrasoft.PushToTalk.TextInput;
 
@@ -123,19 +124,19 @@ public class DictationService : IDisposable, IAsyncDisposable
         if (capsLockOn && _state == DictationState.Idle)
         {
             _logger.LogInformation("{TriggerKey} pressed, CapsLock ON - starting dictation", _triggerKey);
-            _ = Task.Run(() => StartDictationAsync());
+            Task.Run(() => StartDictationAsync()).FireAndForget(_logger, "StartDictation");
         }
         // CapsLock OFF + Recording → stop recording and transcribe
         else if (!capsLockOn && _state == DictationState.Recording)
         {
             _logger.LogInformation("{TriggerKey} pressed, CapsLock OFF - stopping dictation", _triggerKey);
-            _ = Task.Run(() => StopDictationAsync());
+            Task.Run(() => StopDictationAsync()).FireAndForget(_logger, "StopDictation");
         }
         // CapsLock ON + Recording → user toggled again, stop (emergency stop)
         else if (capsLockOn && _state == DictationState.Recording)
         {
             _logger.LogWarning("CapsLock toggled ON while recording - emergency stop");
-            _ = Task.Run(() => StopDictationAsync());
+            Task.Run(() => StopDictationAsync()).FireAndForget(_logger, "StopDictation");
         }
         // If Transcribing, ignore the trigger key press (but cancel key is handled above)
     }
