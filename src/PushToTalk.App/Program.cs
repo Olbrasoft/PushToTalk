@@ -192,6 +192,11 @@ var hubContext = webApp.Services.GetRequiredService<IHubContext<DictationHub>>()
 
 try
 {
+    // Pre-set initial icon BEFORE initialization so it's available during D-Bus registration
+    // (CreateTrayIconAsync uses _currentIcon when registering with StatusNotifierWatcher)
+    dbusTrayIcon.SetIcon("trigger-ptt");
+    dbusTrayIcon.SetTooltip("Push To Talk - Idle");
+
     // Initialize D-Bus tray icons (main + animated use unique paths to avoid duplicate detection - issue #62)
     await dbusTrayIcon.InitializeAsync();
     await animatedIcon.InitializeAsync();
@@ -199,10 +204,6 @@ try
     if (dbusTrayIcon.IsActive)
     {
         Console.WriteLine("D-Bus tray icon initialized");
-
-        // Set initial icon
-        dbusTrayIcon.SetIcon("trigger-ptt");
-        dbusTrayIcon.SetTooltip("Push To Talk - Idle");
 
         // Handle state changes from DictationService
         // Main icon stays visible, animated icon shows NEXT TO it during transcription (issue #62)
