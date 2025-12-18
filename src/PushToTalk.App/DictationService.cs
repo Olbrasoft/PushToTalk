@@ -184,7 +184,16 @@ public class DictationService : IDisposable, IAsyncDisposable
             _logger.LogInformation("Starting audio recording...");
             // Fire-and-forget: don't await - recording runs in background
             // Awaiting would block until recording stops
-            _ = _audioRecorder.StartRecordingAsync(_cts.Token);
+            // But we need to handle failures, so use ContinueWith
+            var recordingTask = _audioRecorder.StartRecordingAsync(_cts.Token);
+            _ = recordingTask.ContinueWith(t =>
+            {
+                if (t.IsFaulted && _state == DictationState.Recording)
+                {
+                    _logger.LogError(t.Exception, "Recording failed");
+                    SetState(DictationState.Idle);
+                }
+            }, TaskContinuationOptions.OnlyOnFaulted);
         }
         catch (Exception ex)
         {

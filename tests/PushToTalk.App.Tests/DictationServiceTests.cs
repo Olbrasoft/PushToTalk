@@ -259,6 +259,9 @@ public class DictationServiceTests : IDisposable
         // Act
         await _service.StartDictationAsync();
 
+        // Wait for the async ContinueWith error handler to execute
+        await Task.Delay(50);
+
         // Assert
         Assert.Equal(DictationState.Idle, _service.State);
     }
