@@ -115,10 +115,10 @@ function setRecordingState(recording, transcribing) {
         stopDurationTimer();
         console.log('Button should be yellow now (Transcribing)');
     } else {
-        // State: Idle - BLUE button with Start
+        // State: Idle - BLUE button with Record
         elements.btnToggle.classList.remove('recording', 'transcribing');
-        elements.toggleIcon.innerHTML = '&#9658;'; // Play icon
-        elements.toggleText.textContent = 'Zacit';
+        elements.toggleIcon.innerHTML = '⏺️'; // Record button icon
+        elements.toggleText.textContent = 'Diktovat';
         stopDurationTimer();
         console.log('Button should be blue now (Idle)');
     }
