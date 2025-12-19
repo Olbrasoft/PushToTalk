@@ -43,6 +43,11 @@ public class DictationOptions
     public string? TranscriptionSoundPath { get; set; }
 
     /// <summary>
+    /// Path to the sound file played when recording starts.
+    /// </summary>
+    public string? RecordingStartSoundPath { get; set; }
+
+    /// <summary>
     /// Whether to show animated icon during transcription.
     /// </summary>
     public bool ShowTranscriptionAnimation { get; set; } = true;
@@ -133,5 +138,18 @@ public class DictationOptions
         return Path.IsPathRooted(TextFiltersPath)
             ? TextFiltersPath
             : Path.Combine(AppContext.BaseDirectory, TextFiltersPath);
+    }
+
+    /// <summary>
+    /// Gets the full path for RecordingStartSoundPath, resolving relative paths.
+    /// </summary>
+    public string? GetFullRecordingStartSoundPath()
+    {
+        if (string.IsNullOrWhiteSpace(RecordingStartSoundPath))
+            return null;
+
+        return Path.IsPathRooted(RecordingStartSoundPath)
+            ? RecordingStartSoundPath
+            : Path.Combine(AppContext.BaseDirectory, RecordingStartSoundPath);
     }
 }

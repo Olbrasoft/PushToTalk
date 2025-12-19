@@ -154,6 +154,32 @@ public class TypingSoundPlayer : IDisposable
     }
 
     /// <summary>
+    /// Plays a custom sound file once (for notifications).
+    /// </summary>
+    /// <param name="soundPath">Path to the sound file to play.</param>
+    public async Task PlayNotificationAsync(string soundPath)
+    {
+        if (_disposed)
+            return;
+
+        if (!File.Exists(soundPath))
+        {
+            _logger.LogWarning("Notification sound file not found: {Path}", soundPath);
+            return;
+        }
+
+        try
+        {
+            await PlaySoundOnceAsync(soundPath);
+            _logger.LogDebug("Notification sound played: {Path}", soundPath);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to play notification sound: {Path}", soundPath);
+        }
+    }
+
+    /// <summary>
     /// Plays a sound file once.
     /// </summary>
     private async Task PlaySoundOnceAsync(string soundPath)

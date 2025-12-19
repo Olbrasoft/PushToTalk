@@ -29,6 +29,8 @@ public class DictationService : IDisposable, IAsyncDisposable
     private readonly ITranscriptionCoordinator _transcriptionCoordinator;
     private readonly ITextOutputHandler _textOutputHandler;
     private readonly IVirtualAssistantClient? _virtualAssistantClient;
+    private readonly TypingSoundPlayer? _soundPlayer;
+    private readonly string? _recordingStartSoundPath;
     private readonly KeyCode _triggerKey;
     private readonly KeyCode _cancelKey;
 
@@ -59,6 +61,8 @@ public class DictationService : IDisposable, IAsyncDisposable
         ITranscriptionCoordinator transcriptionCoordinator,
         ITextOutputHandler textOutputHandler,
         IVirtualAssistantClient? virtualAssistantClient = null,
+        TypingSoundPlayer? soundPlayer = null,
+        string? recordingStartSoundPath = null,
         KeyCode triggerKey = KeyCode.CapsLock,
         KeyCode cancelKey = KeyCode.Escape)
     {
@@ -68,6 +72,8 @@ public class DictationService : IDisposable, IAsyncDisposable
         _transcriptionCoordinator = transcriptionCoordinator ?? throw new ArgumentNullException(nameof(transcriptionCoordinator));
         _textOutputHandler = textOutputHandler ?? throw new ArgumentNullException(nameof(textOutputHandler));
         _virtualAssistantClient = virtualAssistantClient;
+        _soundPlayer = soundPlayer;
+        _recordingStartSoundPath = recordingStartSoundPath;
         _triggerKey = triggerKey;
         _cancelKey = cancelKey;
     }
@@ -169,6 +175,12 @@ public class DictationService : IDisposable, IAsyncDisposable
 
         try
         {
+            // Play recording start notification sound (fire-and-forget)
+            if (_soundPlayer != null && !string.IsNullOrWhiteSpace(_recordingStartSoundPath))
+            {
+                _ = _soundPlayer.PlayNotificationAsync(_recordingStartSoundPath);
+            }
+
             // Notify VirtualAssistant to stop TTS (fire-and-forget, don't block recording)
             if (_virtualAssistantClient != null)
             {

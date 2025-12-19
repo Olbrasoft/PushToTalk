@@ -114,6 +114,8 @@ public static class ServiceCollectionExtensions
             var transcriptionCoordinator = sp.GetRequiredService<ITranscriptionCoordinator>();
             var textOutputHandler = sp.GetRequiredService<ITextOutputHandler>();
             var vaClient = sp.GetService<IVirtualAssistantClient>();
+            var soundPlayer = sp.GetService<TypingSoundPlayer>();
+            var recordingStartSoundPath = options.GetFullRecordingStartSoundPath();
 
             return new DictationService(
                 logger,
@@ -122,6 +124,8 @@ public static class ServiceCollectionExtensions
                 transcriptionCoordinator,
                 textOutputHandler,
                 vaClient,
+                soundPlayer,
+                recordingStartSoundPath,
                 options.GetTriggerKeyCode(),
                 options.GetCancelKeyCode());
         });
