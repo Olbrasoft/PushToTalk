@@ -101,7 +101,7 @@ function setRecordingState(recording, transcribing) {
         // State: Recording - RED button with Stop + timer
         elements.btnToggle.classList.remove('transcribing');
         elements.btnToggle.classList.add('recording');
-        elements.toggleIcon.innerHTML = '&#9632;'; // Stop icon
+        elements.toggleIcon.textContent = '■'; // Stop square
         elements.toggleText.textContent = 'Stop';
         recordingStartTime = Date.now();
         startDurationTimer();
@@ -110,14 +110,14 @@ function setRecordingState(recording, transcribing) {
         // State: Transcribing - YELLOW button with Cancel (X)
         elements.btnToggle.classList.remove('recording');
         elements.btnToggle.classList.add('transcribing');
-        elements.toggleIcon.innerHTML = '&#10005;'; // X icon
+        elements.toggleIcon.textContent = '✕'; // X symbol
         elements.toggleText.textContent = 'Zrusit';
         stopDurationTimer();
         console.log('Button should be yellow now (Transcribing)');
     } else {
         // State: Idle - BLUE button with Record
         elements.btnToggle.classList.remove('recording', 'transcribing');
-        elements.toggleIcon.innerHTML = '⏺️'; // Record button icon
+        elements.toggleIcon.textContent = '●'; // Bullet/circle for record
         elements.toggleText.textContent = 'Diktovat';
         stopDurationTimer();
         console.log('Button should be blue now (Idle)');
