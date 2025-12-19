@@ -89,7 +89,16 @@ var cts = new CancellationTokenSource();
 
 // Build web application for SignalR and remote control
 var webBuilder = WebApplication.CreateBuilder();
-webBuilder.WebHost.UseUrls($"http://0.0.0.0:{webPort}");
+// Configure Kestrel endpoints (HTTP + HTTPS for PWA)
+webBuilder.WebHost.ConfigureKestrel((context, serverOptions) =>
+{
+    serverOptions.ListenAnyIP(5050); // HTTP
+    serverOptions.ListenAnyIP(5051, listenOptions =>
+    {
+        // HTTPS with self-signed certificate for PWA installation
+        listenOptions.UseHttps("/home/jirka/Olbrasoft/PushToTalk/certs/cert.pfx");
+    });
+});
 webBuilder.Logging.ClearProviders();
 webBuilder.Logging.AddConsole();
 webBuilder.Logging.SetMinimumLevel(LogLevel.Warning); // Reduce web server noise
@@ -297,8 +306,9 @@ try
         }
     }).FireAndForget(logger, "WebServer");
 
-    Console.WriteLine($"Web server started on http://localhost:{webPort}");
-    Console.WriteLine($"Remote control: http://localhost:{webPort}/remote.html");
+    Console.WriteLine("Web server started:");
+    Console.WriteLine("  HTTP:  http://localhost:5050/remote.html");
+    Console.WriteLine("  HTTPS: https://localhost:5051/remote.html (for PWA installation)");
 
     // Start keyboard monitoring in background
     Task.Run(async () =>
