@@ -13,7 +13,7 @@
 
     <!-- Debian package metadata -->
     <PackageId>push-to-talk</PackageId>
-    <Version>1.0.15</Version>
+    <Version>1.0.16</Version>
     <Description>Voice transcription using Whisper AI</Description>
     <Authors>Olbrasoft</Authors>
     <DebMaintainer>Olbrasoft</DebMaintainer>
