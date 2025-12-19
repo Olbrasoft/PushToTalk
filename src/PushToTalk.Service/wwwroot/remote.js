@@ -196,7 +196,8 @@ elements.btnToggle.addEventListener('pointerdown', () => {
 elements.btnToggle.addEventListener('click', async () => {
     try {
         console.log('Toggle button clicked, isRecording:', isRecording, 'isTranscribing:', isTranscribing);
-        elements.btnToggle.disabled = true;
+        // Don't disable button here - let setRecordingState handle button state
+        // This prevents race conditions with SignalR events
 
         if (isTranscribing) {
             // Cancel transcription (yellow button state)
@@ -209,7 +210,7 @@ elements.btnToggle.addEventListener('click', async () => {
         }
     } catch (error) {
         console.error('Toggle failed:', error);
-    } finally {
+        // On error, ensure button is enabled
         elements.btnToggle.disabled = false;
     }
 });
