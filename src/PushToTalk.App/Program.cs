@@ -133,9 +133,13 @@ webApp.UseCors();
 var wwwrootPath = Path.Combine(AppContext.BaseDirectory, "wwwroot");
 if (Directory.Exists(wwwrootPath))
 {
+    var provider = new Microsoft.AspNetCore.StaticFiles.FileExtensionContentTypeProvider();
+    provider.Mappings[".pem"] = "application/x-pem-file"; // Add MIME type for .pem files
+
     webApp.UseStaticFiles(new StaticFileOptions
     {
-        FileProvider = new PhysicalFileProvider(wwwrootPath)
+        FileProvider = new PhysicalFileProvider(wwwrootPath),
+        ContentTypeProvider = provider
     });
 }
 
