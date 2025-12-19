@@ -95,8 +95,8 @@ webBuilder.WebHost.ConfigureKestrel((context, serverOptions) =>
     serverOptions.ListenAnyIP(5050); // HTTP
     serverOptions.ListenAnyIP(5051, listenOptions =>
     {
-        // HTTPS with self-signed certificate for PWA installation
-        listenOptions.UseHttps("/home/jirka/Olbrasoft/PushToTalk/certs/cert.pfx");
+        // HTTPS with mkcert certificate for PWA installation (trusted by system)
+        listenOptions.UseHttps("/home/jirka/Olbrasoft/PushToTalk/certs/192.168.0.182+3.p12", "changeit");
     });
 });
 webBuilder.Logging.ClearProviders();
