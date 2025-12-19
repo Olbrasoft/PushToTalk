@@ -253,4 +253,18 @@ public class DictationWorker : BackgroundService, IRecordingStateProvider, IReco
             return true; // Now recording
         }
     }
+
+    /// <inheritdoc />
+    public void CancelTranscription()
+    {
+        if (_isTranscribing)
+        {
+            _logger.LogInformation("Remote cancel transcription requested");
+            _recordingWorkflow.CancelTranscription();
+        }
+        else
+        {
+            _logger.LogWarning("Cancel transcription requested but not transcribing");
+        }
+    }
 }

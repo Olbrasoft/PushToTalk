@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.SignalR;
+using Olbrasoft.PushToTalk.Core.Interfaces;
 using Olbrasoft.PushToTalk.Service.Models;
 using Olbrasoft.PushToTalk.Service.Services;
 
@@ -15,6 +16,7 @@ public class PttHub : Hub
     private readonly IPttNotifier _pttNotifier;
     private readonly IRecordingStateProvider _stateProvider;
     private readonly IRecordingController _recordingController;
+    private readonly ITextTyper _textTyper;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="PttHub"/> class.
@@ -24,18 +26,21 @@ public class PttHub : Hub
     /// <param name="pttNotifier">Notifier for broadcasting PTT events.</param>
     /// <param name="stateProvider">Provider for recording state.</param>
     /// <param name="recordingController">Controller for recording operations.</param>
+    /// <param name="textTyper">Text typer for simulating keyboard input.</param>
     public PttHub(
         ILogger<PttHub> logger,
         ManualMuteService manualMuteService,
         IPttNotifier pttNotifier,
         IRecordingStateProvider stateProvider,
-        IRecordingController recordingController)
+        IRecordingController recordingController,
+        ITextTyper textTyper)
     {
         _logger = logger;
         _manualMuteService = manualMuteService;
         _pttNotifier = pttNotifier;
         _stateProvider = stateProvider;
         _recordingController = recordingController;
+        _textTyper = textTyper;
     }
     
     /// <summary>
@@ -145,5 +150,52 @@ public class PttHub : Hub
     {
         _logger.LogInformation("Client {ConnectionId} requested ToggleRecording", Context.ConnectionId);
         return await _recordingController.ToggleRecordingAsync();
+    }
+
+    /// <summary>
+    /// Simulates pressing the Enter key.
+    /// </summary>
+    /// <returns>A task representing the asynchronous operation.</returns>
+    public async Task PressEnter()
+    {
+        _logger.LogInformation("Client {ConnectionId} requested PressEnter", Context.ConnectionId);
+
+        if (!_textTyper.IsAvailable)
+        {
+            _logger.LogWarning("TextTyper is not available for PressEnter");
+            throw new InvalidOperationException("TextTyper is not available");
+        }
+
+        await _textTyper.SendKeyAsync("enter");
+        _logger.LogDebug("Enter key pressed successfully");
+    }
+
+    /// <summary>
+    /// Simulates pressing Ctrl+C to clear text from prompt.
+    /// </summary>
+    /// <returns>A task representing the asynchronous operation.</returns>
+    public async Task ClearText()
+    {
+        _logger.LogInformation("Client {ConnectionId} requested ClearText", Context.ConnectionId);
+
+        if (!_textTyper.IsAvailable)
+        {
+            _logger.LogWarning("TextTyper is not available for ClearText");
+            throw new InvalidOperationException("TextTyper is not available");
+        }
+
+        await _textTyper.SendKeyAsync("ctrl+c");
+        _logger.LogDebug("Ctrl+C pressed successfully");
+    }
+
+    /// <summary>
+    /// Cancels ongoing transcription (simulates Escape key press).
+    /// </summary>
+    /// <returns>A task representing the asynchronous operation.</returns>
+    public Task CancelTranscription()
+    {
+        _logger.LogInformation("Client {ConnectionId} requested CancelTranscription", Context.ConnectionId);
+        _recordingController.CancelTranscription();
+        return Task.CompletedTask;
     }
 }

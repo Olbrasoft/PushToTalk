@@ -96,12 +96,23 @@ public class DictationHub : Hub
     /// <summary>
     /// Sends Enter key press.
     /// </summary>
-    public Task SendEnter()
+    public Task PressEnter()
     {
-        _logger.LogInformation("SendEnter called from client {ConnectionId}", Context.ConnectionId);
+        _logger.LogInformation("PressEnter called from client {ConnectionId}", Context.ConnectionId);
         // Fire-and-forget so the hub returns immediately
         // Note: dotool uses "enter" (lowercase), not "Return"
-        Task.Run(() => _textTyper.SendKeyAsync("enter")).FireAndForget(_logger, "SendEnter");
+        Task.Run(() => _textTyper.SendKeyAsync("enter")).FireAndForget(_logger, "PressEnter");
+        return Task.CompletedTask;
+    }
+
+    /// <summary>
+    /// Simulates pressing Ctrl+C to clear text from prompt.
+    /// </summary>
+    public Task ClearText()
+    {
+        _logger.LogInformation("ClearText called from client {ConnectionId}", Context.ConnectionId);
+        // Fire-and-forget so the hub returns immediately
+        Task.Run(() => _textTyper.SendKeyAsync("ctrl+c")).FireAndForget(_logger, "ClearText");
         return Task.CompletedTask;
     }
 }

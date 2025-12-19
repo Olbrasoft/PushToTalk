@@ -26,4 +26,9 @@ public interface IRecordingController
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>True if now recording, false if now stopped.</returns>
     Task<bool> ToggleRecordingAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Cancels ongoing transcription (simulates Escape key press).
+    /// </summary>
+    void CancelTranscription();
 }

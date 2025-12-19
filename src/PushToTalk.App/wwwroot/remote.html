@@ -29,53 +29,6 @@
             text-align: center;
         }
 
-        h1 {
-            font-size: 1.5rem;
-            margin-bottom: 10px;
-            color: #fff;
-        }
-
-        .status-indicator {
-            display: inline-flex;
-            align-items: center;
-            gap: 10px;
-            padding: 10px 20px;
-            border-radius: 20px;
-            background: rgba(255,255,255,0.1);
-            margin-bottom: 30px;
-            font-size: 0.9rem;
-        }
-
-        .status-dot {
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-            background: #666;
-            transition: all 0.3s ease;
-        }
-
-        .status-dot.connected {
-            background: #4caf50;
-            box-shadow: 0 0 10px #4caf50;
-        }
-
-        .status-dot.recording {
-            background: #f44336;
-            box-shadow: 0 0 10px #f44336;
-            animation: pulse 1s infinite;
-        }
-
-        .status-dot.transcribing {
-            background: #ff9800;
-            box-shadow: 0 0 10px #ff9800;
-            animation: pulse 0.5s infinite;
-        }
-
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
-        }
-
         .controls {
             display: flex;
             flex-direction: column;
@@ -127,9 +80,8 @@
         .btn-toggle {
             background: linear-gradient(135deg, #2196f3 0%, #1976d2 100%);
             color: white;
-            padding: 50px 40px;
+            padding: 40px 40px;
             font-size: 1.6rem;
-            min-height: 120px;
         }
 
         .btn-toggle:hover:not(:disabled) {
@@ -141,22 +93,34 @@
         }
 
         .btn-toggle.transcribing {
-            background: linear-gradient(135deg, #ff9800 0%, #f57c00 100%);
+            background: linear-gradient(135deg, #ffd700 0%, #ffb900 100%);
+            color: #000;
         }
 
         .btn-toggle.transcribing:hover:not(:disabled) {
-            background: linear-gradient(135deg, #f57c00 0%, #ef6c00 100%);
+            background: linear-gradient(135deg, #ffb900 0%, #ff9800 100%);
         }
 
         .btn-enter {
-            background: linear-gradient(135deg, #9c27b0 0%, #7b1fa2 100%);
+            background: linear-gradient(135deg, #4caf50 0%, #45a049 100%);
             color: white;
-            padding: 20px 40px;
-            font-size: 1.2rem;
+            padding: 30px 40px;
+            font-size: 1.3rem;
         }
 
         .btn-enter:hover:not(:disabled) {
-            background: linear-gradient(135deg, #7b1fa2 0%, #6a1b9a 100%);
+            background: linear-gradient(135deg, #45a049 0%, #3d9142 100%);
+        }
+
+        .btn-clear {
+            background: linear-gradient(135deg, #ff9800 0%, #f57c00 100%);
+            color: white;
+            padding: 25px 40px;
+            font-size: 1.1rem;
+        }
+
+        .btn-clear:hover:not(:disabled) {
+            background: linear-gradient(135deg, #f57c00 0%, #ef6c00 100%);
         }
 
         .transcription-box {
@@ -205,43 +169,24 @@
         .connection-status.disconnected {
             color: #f44336;
         }
-
-        .duration {
-            font-size: 2rem;
-            font-weight: bold;
-            margin: 20px 0;
-            font-variant-numeric: tabular-nums;
-            color: #fff;
-            opacity: 0;
-            transition: opacity 0.3s ease;
-        }
-
-        .duration.visible {
-            opacity: 1;
-        }
     </style>
 </head>
 <body>
     <div class="connection-status disconnected" id="connectionStatus">Odpojeno</div>
 
     <div class="container">
-        <h1>PushToTalk Remote</h1>
-
-        <div class="status-indicator">
-            <span class="status-dot" id="statusDot"></span>
-            <span id="statusText">Nepripojeno</span>
-        </div>
-
-        <div class="duration" id="duration">00:00</div>
-
         <div class="controls">
             <button class="btn btn-toggle" id="btnToggle" disabled>
                 <span id="toggleIcon">&#9658;</span>
-                <span id="toggleText">Start</span>
+                <span id="toggleText">Zacit</span>
             </button>
+
             <button class="btn btn-enter" id="btnEnter" disabled>
-                <span>&#9166;</span>
-                <span>Enter</span>
+                ⏎ Enter
+            </button>
+
+            <button class="btn btn-clear" id="btnClear" disabled>
+                🗑️ Vymazat konverzaci
             </button>
         </div>
 
@@ -252,6 +197,11 @@
     </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.0/signalr.min.js"></script>
-    <script src="remote.js"></script>
+    <script>
+        // Cache busting - add timestamp to remote.js URL
+        const script = document.createElement('script');
+        script.src = 'remote.js?v=' + Date.now();
+        document.body.appendChild(script);
+    </script>
 </body>
 </html>

@@ -3,13 +3,11 @@
 
 const elements = {
     connectionStatus: document.getElementById('connectionStatus'),
-    statusDot: document.getElementById('statusDot'),
-    statusText: document.getElementById('statusText'),
-    duration: document.getElementById('duration'),
     btnToggle: document.getElementById('btnToggle'),
+    btnEnter: document.getElementById('btnEnter'),
+    btnClear: document.getElementById('btnClear'),
     toggleIcon: document.getElementById('toggleIcon'),
     toggleText: document.getElementById('toggleText'),
-    btnEnter: document.getElementById('btnEnter'),
     transcriptionText: document.getElementById('transcriptionText')
 };
 
@@ -48,14 +46,14 @@ function buildConnection() {
     });
 
     // Dictation Events from server
-    connection.on('DictationEvent', handleDictationEvent);
+    connection.on('DictationEvent', handlePttEvent);
     connection.on('Connected', (connectionId) => {
         console.log('Connected with ID:', connectionId);
     });
 }
 
-function handleDictationEvent(event) {
-    console.log('DictationEvent:', event);
+function handlePttEvent(event) {
+    console.log('PttEvent:', event);
 
     switch (event.eventType) {
         case 0: // RecordingStarted
@@ -89,58 +87,43 @@ function setConnectionStatus(connected) {
 
     elements.btnToggle.disabled = !connected;
     elements.btnEnter.disabled = !connected;
-
-    if (!connected) {
-        elements.statusDot.className = 'status-dot';
-        elements.statusText.textContent = 'Odpojeno';
-    }
+    elements.btnClear.disabled = !connected;
 }
 
 function setRecordingState(recording, transcribing) {
     isRecording = recording;
     isTranscribing = transcribing;
 
-    // Update status dot
-    elements.statusDot.className = 'status-dot connected';
-    if (recording) {
-        elements.statusDot.classList.add('recording');
-        elements.statusText.textContent = 'Nahrava se...';
-    } else if (transcribing) {
-        elements.statusDot.classList.add('transcribing');
-        elements.statusText.textContent = 'Prepisuje se...';
-    } else {
-        elements.statusText.textContent = 'Pripraveno';
-    }
+    console.log('setRecordingState called:', { recording, transcribing });
 
-    // Update toggle button - three states: Start, Stop, Zrusit
-    elements.btnToggle.classList.remove('recording', 'transcribing');
+    // Update toggle button - 3 states: Idle (blue), Recording (red), Transcribing (yellow)
     if (recording) {
+        // State: Recording - RED button with Stop + timer
+        elements.btnToggle.classList.remove('transcribing');
         elements.btnToggle.classList.add('recording');
-        elements.btnToggle.disabled = false;
         elements.toggleIcon.innerHTML = '&#9632;'; // Stop icon
         elements.toggleText.textContent = 'Stop';
+        recordingStartTime = Date.now();
+        startDurationTimer();
+        console.log('Button should be red now (Recording), timer started');
     } else if (transcribing) {
+        // State: Transcribing - YELLOW button with Cancel (X)
+        elements.btnToggle.classList.remove('recording');
         elements.btnToggle.classList.add('transcribing');
-        elements.btnToggle.disabled = false; // ENABLED - clicking cancels transcription
-        elements.toggleIcon.innerHTML = '&#10006;'; // X icon for cancel
+        elements.toggleIcon.innerHTML = '&#10005;'; // X icon
         elements.toggleText.textContent = 'Zrusit';
+        stopDurationTimer();
+        console.log('Button should be yellow now (Transcribing)');
     } else {
-        elements.btnToggle.disabled = false;
+        // State: Idle - BLUE button with Start
+        elements.btnToggle.classList.remove('recording', 'transcribing');
         elements.toggleIcon.innerHTML = '&#9658;'; // Play icon
-        elements.toggleText.textContent = 'Start';
+        elements.toggleText.textContent = 'Zacit';
+        stopDurationTimer();
+        console.log('Button should be blue now (Idle)');
     }
 
-    // Update duration display
-    if (recording) {
-        recordingStartTime = Date.now();
-        elements.duration.classList.add('visible');
-        startDurationTimer();
-    } else {
-        stopDurationTimer();
-        if (!transcribing) {
-            elements.duration.classList.remove('visible');
-        }
-    }
+    // Enter and Clear buttons are always enabled when connected (handled by setConnectionStatus)
 }
 
 function setTranscriptionText(text) {
@@ -151,11 +134,11 @@ function setTranscriptionText(text) {
 function startDurationTimer() {
     stopDurationTimer();
     durationInterval = setInterval(() => {
-        if (recordingStartTime) {
+        if (recordingStartTime && isRecording) {
             const elapsed = Math.floor((Date.now() - recordingStartTime) / 1000);
             const minutes = Math.floor(elapsed / 60).toString().padStart(2, '0');
             const seconds = (elapsed % 60).toString().padStart(2, '0');
-            elements.duration.textContent = `${minutes}:${seconds}`;
+            elements.toggleText.textContent = `Nahravani ${minutes}:${seconds}`;
         }
     }, 100);
 }
@@ -177,39 +160,47 @@ async function refreshStatus() {
     }
 }
 
-// Button handler - three functions: Start, Stop, Cancel
+// Button handlers
 elements.btnToggle.addEventListener('click', async () => {
-    console.log('Toggle button clicked, isRecording:', isRecording, 'isTranscribing:', isTranscribing);
-
-    if (isTranscribing) {
-        // During transcription, toggle button acts as Cancel
-        console.log('Calling CancelTranscription...');
-        try {
-            await connection.invoke('CancelTranscription');
-            console.log('CancelTranscription completed');
-        } catch (error) {
-            console.error('Cancel failed:', error);
-        }
-        return;
-    }
-
-    // Start or Stop recording
     try {
-        await connection.invoke('ToggleRecording');
-        console.log('ToggleRecording completed');
+        console.log('Toggle button clicked, isRecording:', isRecording, 'isTranscribing:', isTranscribing);
+        elements.btnToggle.disabled = true;
+
+        if (isTranscribing) {
+            // Cancel transcription (yellow button state)
+            console.log('Sending CancelTranscription');
+            await connection.invoke('CancelTranscription');
+        } else {
+            // Toggle recording (blue <-> red)
+            console.log('Sending ToggleRecording');
+            await connection.invoke('ToggleRecording');
+        }
     } catch (error) {
         console.error('Toggle failed:', error);
+    } finally {
+        elements.btnToggle.disabled = false;
     }
 });
 
-// Enter button - sends Enter key press
 elements.btnEnter.addEventListener('click', async () => {
-    console.log('Enter button clicked');
     try {
-        await connection.invoke('SendEnter');
-        console.log('SendEnter completed');
+        elements.btnEnter.disabled = true;
+        await connection.invoke('PressEnter');
     } catch (error) {
-        console.error('SendEnter failed:', error);
+        console.error('Enter failed:', error);
+    } finally {
+        elements.btnEnter.disabled = false;
+    }
+});
+
+elements.btnClear.addEventListener('click', async () => {
+    try {
+        elements.btnClear.disabled = true;
+        await connection.invoke('ClearText');
+    } catch (error) {
+        console.error('Clear failed:', error);
+    } finally {
+        elements.btnClear.disabled = false;
     }
 });
 
