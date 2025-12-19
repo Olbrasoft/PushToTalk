@@ -160,25 +160,34 @@ async function refreshStatus() {
     }
 }
 
+// Haptic feedback handler (separate from click to ensure it works on Xiaomi devices)
+// Using pointerdown because click event is not always trusted on MIUI devices
+elements.btnToggle.addEventListener('pointerdown', () => {
+    if ('vibrate' in navigator) {
+        let pattern;
+        if (isTranscribing) {
+            // Canceling transcription - short vibration
+            pattern = 30;
+        } else if (isRecording) {
+            // Stopping recording - medium vibration
+            pattern = 50;
+        } else {
+            // Starting recording - double vibration pattern
+            pattern = [100, 50, 100];
+        }
+        console.log('Vibration API available, attempting vibration pattern:', pattern);
+        const result = navigator.vibrate(pattern);
+        console.log('Vibration result:', result, 'isTrusted:', event.isTrusted);
+    } else {
+        console.warn('Vibration API not supported on this device');
+    }
+});
+
 // Button handlers
 elements.btnToggle.addEventListener('click', async () => {
     try {
         console.log('Toggle button clicked, isRecording:', isRecording, 'isTranscribing:', isTranscribing);
         elements.btnToggle.disabled = true;
-
-        // Haptic feedback - vibrate on click
-        if ('vibrate' in navigator) {
-            if (isTranscribing) {
-                // Canceling transcription - short vibration
-                navigator.vibrate(30);
-            } else if (isRecording) {
-                // Stopping recording - medium vibration
-                navigator.vibrate(50);
-            } else {
-                // Starting recording - double vibration pattern
-                navigator.vibrate([100, 50, 100]);
-            }
-        }
 
         if (isTranscribing) {
             // Cancel transcription (yellow button state)
