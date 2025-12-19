@@ -163,6 +163,12 @@ async function refreshStatus() {
 // Haptic feedback handler (separate from click to ensure it works on Xiaomi devices)
 // Using pointerdown because click event is not always trusted on MIUI devices
 elements.btnToggle.addEventListener('pointerdown', () => {
+    // Don't vibrate if button is disabled (prevents confusion during processing)
+    if (elements.btnToggle.disabled) {
+        console.log('Button disabled, skipping vibration');
+        return;
+    }
+
     if ('vibrate' in navigator) {
         let pattern;
         if (isTranscribing) {
