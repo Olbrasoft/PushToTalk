@@ -166,6 +166,20 @@ elements.btnToggle.addEventListener('click', async () => {
         console.log('Toggle button clicked, isRecording:', isRecording, 'isTranscribing:', isTranscribing);
         elements.btnToggle.disabled = true;
 
+        // Haptic feedback - vibrate on click
+        if ('vibrate' in navigator) {
+            if (isTranscribing) {
+                // Canceling transcription - short vibration
+                navigator.vibrate(30);
+            } else if (isRecording) {
+                // Stopping recording - medium vibration
+                navigator.vibrate(50);
+            } else {
+                // Starting recording - double vibration pattern
+                navigator.vibrate([100, 50, 100]);
+            }
+        }
+
         if (isTranscribing) {
             // Cancel transcription (yellow button state)
             console.log('Sending CancelTranscription');
