@@ -103,6 +103,7 @@ function setRecordingState(recording, transcribing) {
         elements.btnToggle.classList.add('recording');
         elements.toggleIcon.textContent = '■'; // Stop square
         elements.toggleText.textContent = 'Stop';
+        elements.btnToggle.disabled = false; // ALWAYS enable during recording so user can stop
         recordingStartTime = Date.now();
         startDurationTimer();
         console.log('Button should be red now (Recording), timer started');
@@ -112,6 +113,7 @@ function setRecordingState(recording, transcribing) {
         elements.btnToggle.classList.add('transcribing');
         elements.toggleIcon.textContent = '✕'; // X symbol
         elements.toggleText.textContent = 'Zrusit';
+        elements.btnToggle.disabled = false; // ALWAYS enable during transcription so user can cancel
         stopDurationTimer();
         console.log('Button should be yellow now (Transcribing)');
     } else {
@@ -119,6 +121,7 @@ function setRecordingState(recording, transcribing) {
         elements.btnToggle.classList.remove('recording', 'transcribing');
         elements.toggleIcon.textContent = '●'; // Bullet/circle for record
         elements.toggleText.textContent = 'Diktovat';
+        elements.btnToggle.disabled = false; // Enable when idle
         stopDurationTimer();
         console.log('Button should be blue now (Idle)');
     }
