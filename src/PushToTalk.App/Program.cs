@@ -93,11 +93,16 @@ var webBuilder = WebApplication.CreateBuilder();
 webBuilder.WebHost.ConfigureKestrel((context, serverOptions) =>
 {
     serverOptions.ListenAnyIP(5050); // HTTP
-    serverOptions.ListenAnyIP(5051, listenOptions =>
+
+    // HTTPS only if certificate exists (for PWA installation)
+    var certPath = Path.Combine(AppContext.BaseDirectory, "certs", "192.168.0.182+3.p12");
+    if (File.Exists(certPath))
     {
-        // HTTPS with mkcert certificate for PWA installation (trusted by system)
-        listenOptions.UseHttps("/home/jirka/Olbrasoft/PushToTalk/certs/192.168.0.182+3.p12", "changeit");
-    });
+        serverOptions.ListenAnyIP(5051, listenOptions =>
+        {
+            listenOptions.UseHttps(certPath, "changeit");
+        });
+    }
 });
 webBuilder.Logging.ClearProviders();
 webBuilder.Logging.AddConsole();

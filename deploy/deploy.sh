@@ -76,6 +76,17 @@ dotnet publish src/PushToTalk.App/PushToTalk.App.csproj \
 echo "✅ Published to $DEPLOY_TARGET"
 echo
 
+# Step 4a: Copy SSL certificate (if exists)
+if [ -f "$PROJECT_PATH/certs/192.168.0.182+3.p12" ]; then
+    echo "🔐 Copying SSL certificate..."
+    mkdir -p "$DEPLOY_TARGET/certs"
+    cp "$PROJECT_PATH/certs/192.168.0.182+3.p12" "$DEPLOY_TARGET/certs/"
+    echo "✅ SSL certificate copied (HTTPS will be available)"
+else
+    echo "ℹ️  No SSL certificate found (HTTPS will be disabled)"
+fi
+echo
+
 # Step 5: Install desktop file for GNOME launcher
 echo "🖥️  Installing desktop entry..."
 DESKTOP_DIR="$HOME/.local/share/applications"
