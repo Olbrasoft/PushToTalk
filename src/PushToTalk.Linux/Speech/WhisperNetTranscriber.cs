@@ -61,8 +61,9 @@ public class WhisperNetTranscriber : ISpeechTranscriber
 
             _logger.LogInformation("Loading Whisper.net model from: {ModelPath}", _modelPath);
 
-            // Create factory - Whisper.net automatically selects best runtime (CUDA > CPU)
-            _whisperFactory = WhisperFactory.FromPath(_modelPath);
+            // Create factory with explicit GPU acceleration
+            var options = new WhisperFactoryOptions { UseGpu = true };
+            _whisperFactory = WhisperFactory.FromPath(_modelPath, options);
 
             // Create processor with configuration optimized for Czech speech recognition
             _processor = _whisperFactory.CreateBuilder()
