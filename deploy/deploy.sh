@@ -8,7 +8,7 @@ set -e
 
 PROJECT_PATH="/home/jirka/Olbrasoft/PushToTalk"
 PROJECT_FILE="$PROJECT_PATH/src/PushToTalk.App/PushToTalk.App.csproj"
-DEPLOY_TARGET="/home/jirka/push-to-talk"
+DEPLOY_TARGET="/home/jirka/apps/push-to-talk"
 DESKTOP_FILE="io.olbrasoft.PushToTalk.desktop"
 ICON_NAME="io.olbrasoft.PushToTalk"
 
