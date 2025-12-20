@@ -3,22 +3,32 @@ set -e
 
 # PushToTalk Deploy Script
 # Builds, tests, auto-increments version, and deploys
-# Usage: ./deploy.sh [--no-version-bump]
+# Usage: ./deploy.sh <base-directory> [--no-version-bump]
+#   <base-directory>: Target directory (e.g., /opt/olbrasoft/push-to-talk)
 #   --no-version-bump: Skip version increment (used by webhook to avoid infinite loop)
+
+# Get base directory from first argument
+BASE_DIR="$1"
+
+# Check if base directory is provided
+if [ -z "$BASE_DIR" ]; then
+    echo "❌ Usage: deploy.sh <base-directory> [--no-version-bump]"
+    echo "Example: ./deploy.sh /opt/olbrasoft/push-to-talk"
+    exit 1
+fi
 
 PROJECT_PATH="/home/jirka/Olbrasoft/PushToTalk"
 PROJECT_FILE="$PROJECT_PATH/src/PushToTalk.App/PushToTalk.App.csproj"
-DEPLOY_TARGET="/home/jirka/apps/push-to-talk"
 DESKTOP_FILE="io.olbrasoft.PushToTalk.desktop"
 ICON_NAME="io.olbrasoft.PushToTalk"
 
-# Parse arguments
+# Parse arguments (skip first arg which is BASE_DIR)
 BUMP_VERSION=true
+shift  # Remove BASE_DIR from argument list
 for arg in "$@"; do
     case $arg in
         --no-version-bump)
             BUMP_VERSION=false
-            shift
             ;;
     esac
 done
@@ -67,20 +77,20 @@ echo
 
 # Step 4: Build and publish
 echo "🔨 Building and publishing..."
-mkdir -p "$DEPLOY_TARGET"
+mkdir -p "$BASE_DIR/app"
 dotnet publish src/PushToTalk.App/PushToTalk.App.csproj \
   -c Release \
-  -o "$DEPLOY_TARGET" \
+  -o "$BASE_DIR/app" \
   --no-self-contained
 
-echo "✅ Published to $DEPLOY_TARGET"
+echo "✅ Published to $BASE_DIR/app"
 echo
 
 # Step 4a: Copy SSL certificate (if exists)
 if [ -f "$PROJECT_PATH/certs/192.168.0.182+3.p12" ]; then
     echo "🔐 Copying SSL certificate..."
-    mkdir -p "$DEPLOY_TARGET/certs"
-    cp "$PROJECT_PATH/certs/192.168.0.182+3.p12" "$DEPLOY_TARGET/certs/"
+    mkdir -p "$BASE_DIR/certs"
+    cp "$PROJECT_PATH/certs/192.168.0.182+3.p12" "$BASE_DIR/certs/"
     echo "✅ SSL certificate copied (HTTPS will be available)"
 else
     echo "ℹ️  No SSL certificate found (HTTPS will be disabled)"
@@ -98,7 +108,7 @@ cat > "$DESKTOP_DIR/$DESKTOP_FILE" << EOF
 Name=Push To Talk
 GenericName=Dictation Tool
 Comment=Voice transcription using Whisper AI (v$NEW_VERSION)
-Exec=$DEPLOY_TARGET/push-to-talk
+Exec=$BASE_DIR/app/push-to-talk
 Icon=$ICON_NAME
 Terminal=false
 Type=Application
@@ -146,9 +156,9 @@ echo
 echo "╔══════════════════════════════════════════════════════════════╗"
 echo "║               ✅ Deployment completed!                        ║"
 echo "╠══════════════════════════════════════════════════════════════╣"
-echo "║  Version: $NEW_VERSION                                           ║"
-echo "║  Location: $DEPLOY_TARGET                          ║"
-echo "║                                                              ║"
-echo "║  Launch: Press Super key and search 'Push To Talk'          ║"
-echo "║  Or run: $DEPLOY_TARGET/push-to-talk               ║"
+echo "║  Version: $NEW_VERSION"
+echo "║  Location: $BASE_DIR/app"
+echo "║"
+echo "║  Launch: Press Super key and search 'Push To Talk'"
+echo "║  Or run: $BASE_DIR/app/push-to-talk"
 echo "╚══════════════════════════════════════════════════════════════╝"

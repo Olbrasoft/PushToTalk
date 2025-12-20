@@ -1,4 +1,5 @@
 using Olbrasoft.PushToTalk;
+using PushToTalk.Core.Configuration;
 
 namespace Olbrasoft.PushToTalk.App;
 
@@ -106,9 +107,18 @@ public class DictationOptions
 
     /// <summary>
     /// Gets the full path for GgmlModelPath, resolving relative paths.
+    /// If GgmlModelPath is just a filename (no path separators), uses WhisperModelLocator
+    /// to find the model in FHS-compliant locations (~/.local/share/whisper-models/).
     /// </summary>
     public string GetFullGgmlModelPath()
     {
+        // If it's just a filename (no path separators), use WhisperModelLocator
+        if (!Path.IsPathRooted(GgmlModelPath) && !GgmlModelPath.Contains('/') && !GgmlModelPath.Contains('\\'))
+        {
+            return WhisperModelLocator.GetModelPath(GgmlModelPath);
+        }
+
+        // Legacy: absolute path or relative to base directory
         return Path.IsPathRooted(GgmlModelPath)
             ? GgmlModelPath
             : Path.Combine(AppContext.BaseDirectory, GgmlModelPath);
