@@ -1,7 +1,7 @@
 using Microsoft.Extensions.Logging;
 using Olbrasoft.PushToTalk.Audio;
+using Olbrasoft.PushToTalk.Core.Interfaces;
 using Olbrasoft.PushToTalk.Core.Models;
-using Olbrasoft.PushToTalk.Speech;
 
 namespace Olbrasoft.PushToTalk.App.Services;
 

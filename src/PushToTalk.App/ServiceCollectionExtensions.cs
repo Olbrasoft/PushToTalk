@@ -3,7 +3,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Olbrasoft.PushToTalk.App.Services;
 using Olbrasoft.PushToTalk.Audio;
-using Olbrasoft.PushToTalk.Speech;
+using Olbrasoft.PushToTalk.Linux.Speech;
 using Olbrasoft.PushToTalk.TextInput;
 
 namespace Olbrasoft.PushToTalk.App;
@@ -37,6 +37,13 @@ public static class ServiceCollectionExtensions
             return new EvdevKeyboardMonitor(logger, options.KeyboardDevice);
         });
 
+        // Key simulator for CapsLock LED synchronization
+        services.AddSingleton<IKeySimulator>(sp =>
+        {
+            var logger = sp.GetRequiredService<ILogger<UinputKeySimulator>>();
+            return new UinputKeySimulator(logger);
+        });
+
         // Audio recorder
         services.AddSingleton<IAudioRecorder>(sp =>
         {
@@ -44,12 +51,12 @@ public static class ServiceCollectionExtensions
             return new PipeWireAudioRecorder(logger);
         });
 
-        // Speech transcriber
+        // Speech transcriber (using gRPC microservice)
         services.AddSingleton<ISpeechTranscriber>(sp =>
         {
-            var logger = sp.GetRequiredService<ILogger<WhisperNetTranscriber>>();
-            var modelPath = options.GetFullGgmlModelPath();
-            return new WhisperNetTranscriber(logger, modelPath, options.WhisperLanguage);
+            var logger = sp.GetRequiredService<ILogger<SpeechToTextGrpcClient>>();
+            var serviceUrl = Environment.GetEnvironmentVariable("SPEECHTOTEXT_SERVICE_URL") ?? "http://localhost:5052";
+            return new SpeechToTextGrpcClient(logger, serviceUrl, options.WhisperLanguage);
         });
 
         // Environment provider for display server detection
@@ -110,6 +117,7 @@ public static class ServiceCollectionExtensions
         {
             var logger = sp.GetRequiredService<ILogger<DictationService>>();
             var keyboardMonitor = sp.GetRequiredService<IKeyboardMonitor>();
+            var keySimulator = sp.GetRequiredService<IKeySimulator>();
             var audioRecorder = sp.GetRequiredService<IAudioRecorder>();
             var transcriptionCoordinator = sp.GetRequiredService<ITranscriptionCoordinator>();
             var textOutputHandler = sp.GetRequiredService<ITextOutputHandler>();
@@ -120,6 +128,7 @@ public static class ServiceCollectionExtensions
             return new DictationService(
                 logger,
                 keyboardMonitor,
+                keySimulator,
                 audioRecorder,
                 transcriptionCoordinator,
                 textOutputHandler,
