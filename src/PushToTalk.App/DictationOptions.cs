@@ -19,6 +19,13 @@ public class DictationOptions
     public string? KeyboardDevice { get; set; }
 
     /// <summary>
+    /// Audio input device name for recording (null for system default).
+    /// For PipeWire: use PulseAudio device name (e.g., "alsa_input.usb-046d_Logitech_StreamCam_490A4236-02.analog-stereo")
+    /// For ALSA: use device name (e.g., "hw:2,0" or "plughw:CARD=StreamCam,DEV=0")
+    /// </summary>
+    public string? AudioDevice { get; set; }
+
+    /// <summary>
     /// Whisper language code (e.g., "cs", "en").
     /// </summary>
     public string WhisperLanguage { get; set; } = "cs";

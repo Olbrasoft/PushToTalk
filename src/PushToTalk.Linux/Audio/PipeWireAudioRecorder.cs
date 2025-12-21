@@ -81,7 +81,7 @@ public class PipeWireAudioRecorder : IAudioRecorder
             var recordCommand = usePipeWire ? "pw-cat" : "arecord";
 
             var arguments = usePipeWire
-                ? $"-r --format s16 --rate {_sampleRate} --channels {_channels} -"
+                ? BuildPwCatArguments()
                 : $"-f S16_LE -r {_sampleRate} -c {_channels} -D {_deviceName} -";
 
             _recordProcess = new Process
@@ -225,6 +225,20 @@ public class PipeWireAudioRecorder : IAudioRecorder
     public byte[] GetRecordedData()
     {
         return _recordedData.ToArray();
+    }
+
+    private string BuildPwCatArguments()
+    {
+        var args = $"-r --format s16 --rate {_sampleRate} --channels {_channels}";
+
+        // Add --target parameter if device name is specified and not "default"
+        if (!string.IsNullOrEmpty(_deviceName) && _deviceName != "default")
+        {
+            args += $" --target {_deviceName}";
+        }
+
+        args += " -";
+        return args;
     }
 
     private static bool CheckCommandAvailable(string command)

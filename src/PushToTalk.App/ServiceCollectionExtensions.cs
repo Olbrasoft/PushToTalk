@@ -50,7 +50,9 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IAudioRecorder>(sp =>
         {
             var logger = sp.GetRequiredService<ILogger<PipeWireAudioRecorder>>();
-            return new PipeWireAudioRecorder(logger);
+            return new PipeWireAudioRecorder(
+                logger,
+                deviceName: options.AudioDevice); // Use configured audio device or default
         });
 
         // Speech transcriber (using gRPC microservice)
