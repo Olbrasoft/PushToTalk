@@ -106,13 +106,14 @@ public class DictationHub : Hub
     }
 
     /// <summary>
-    /// Simulates pressing Ctrl+C to clear text from prompt.
+    /// Simulates pressing Ctrl+U to clear the current line in terminal.
+    /// Safe to use anytime - doesn't close terminal like Ctrl+C would.
     /// </summary>
     public Task ClearText()
     {
         _logger.LogInformation("ClearText called from client {ConnectionId}", Context.ConnectionId);
         // Fire-and-forget so the hub returns immediately
-        Task.Run(() => _textTyper.SendKeyAsync("ctrl+c")).FireAndForget(_logger, "ClearText");
+        Task.Run(() => _textTyper.SendKeyAsync("ctrl+u")).FireAndForget(_logger, "ClearText");
         return Task.CompletedTask;
     }
 }

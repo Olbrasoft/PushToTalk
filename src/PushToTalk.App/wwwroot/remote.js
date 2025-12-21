@@ -126,7 +126,7 @@ function setRecordingState(recording, transcribing) {
         console.log('Button should be blue now (Idle)');
     }
 
-    // Enter and Clear buttons are always enabled when connected (handled by setConnectionStatus)
+    // Enter and Clear buttons are always enabled when connected
 }
 
 function setTranscriptionText(text) {

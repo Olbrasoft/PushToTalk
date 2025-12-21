@@ -2,6 +2,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Olbrasoft.PushToTalk.Audio;
 using Olbrasoft.PushToTalk.Core.Interfaces;
+using Olbrasoft.PushToTalk.Linux.Speech;
 using Olbrasoft.PushToTalk.Service.Services;
 using Olbrasoft.PushToTalk.TextInput;
 
@@ -71,10 +72,12 @@ public static class ServiceCollectionExtensions
             return new PipeWireAudioRecorder(logger);
         });
 
+        // Speech transcriber (using gRPC microservice)
         services.AddSingleton<ISpeechTranscriber>(sp =>
         {
-            var logger = sp.GetRequiredService<ILogger<WhisperNetTranscriber>>();
-            return new WhisperNetTranscriber(logger, ggmlModelPath, whisperLanguage);
+            var logger = sp.GetRequiredService<ILogger<SpeechToTextGrpcClient>>();
+            var serviceUrl = Environment.GetEnvironmentVariable("SPEECHTOTEXT_SERVICE_URL") ?? "http://localhost:5052";
+            return new SpeechToTextGrpcClient(logger, serviceUrl, whisperLanguage);
         });
 
         // Environment provider for display server detection

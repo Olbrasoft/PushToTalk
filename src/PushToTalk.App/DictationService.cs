@@ -25,6 +25,7 @@ public class DictationService : IDisposable, IAsyncDisposable
     private bool _disposed;
     private readonly ILogger<DictationService> _logger;
     private readonly IKeyboardMonitor _keyboardMonitor;
+    private readonly IKeySimulator _keySimulator;
     private readonly IAudioRecorder _audioRecorder;
     private readonly ITranscriptionCoordinator _transcriptionCoordinator;
     private readonly ITextOutputHandler _textOutputHandler;
@@ -38,6 +39,7 @@ public class DictationService : IDisposable, IAsyncDisposable
     private readonly object _stateLock = new();
     private CancellationTokenSource? _cts;
     private CancellationTokenSource? _transcriptionCts;
+    private bool _synchronizingCapsLock;
 
     /// <summary>
     /// Event raised when dictation state changes.
@@ -57,6 +59,7 @@ public class DictationService : IDisposable, IAsyncDisposable
     public DictationService(
         ILogger<DictationService> logger,
         IKeyboardMonitor keyboardMonitor,
+        IKeySimulator keySimulator,
         IAudioRecorder audioRecorder,
         ITranscriptionCoordinator transcriptionCoordinator,
         ITextOutputHandler textOutputHandler,
@@ -68,6 +71,7 @@ public class DictationService : IDisposable, IAsyncDisposable
     {
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         _keyboardMonitor = keyboardMonitor ?? throw new ArgumentNullException(nameof(keyboardMonitor));
+        _keySimulator = keySimulator ?? throw new ArgumentNullException(nameof(keySimulator));
         _audioRecorder = audioRecorder ?? throw new ArgumentNullException(nameof(audioRecorder));
         _transcriptionCoordinator = transcriptionCoordinator ?? throw new ArgumentNullException(nameof(transcriptionCoordinator));
         _textOutputHandler = textOutputHandler ?? throw new ArgumentNullException(nameof(textOutputHandler));
@@ -113,6 +117,13 @@ public class DictationService : IDisposable, IAsyncDisposable
 
         if (e.Key != _triggerKey)
             return;
+
+        // Ignore CapsLock events during LED synchronization (web remote control)
+        if (_synchronizingCapsLock)
+        {
+            _logger.LogDebug("Ignoring {TriggerKey} event during LED synchronization", _triggerKey);
+            return;
+        }
 
         // Check ACTUAL CapsLock LED state, not just toggle internal state
         // This prevents desynchronization when CapsLock is toggled while app is not in expected state
@@ -175,6 +186,25 @@ public class DictationService : IDisposable, IAsyncDisposable
 
         try
         {
+            // Synchronize CapsLock LED (for web remote control)
+            // If CapsLock is OFF, simulate key press to turn it ON
+            var capsLockOn = _keyboardMonitor.IsCapsLockOn();
+            if (!capsLockOn)
+            {
+                _logger.LogInformation("CapsLock LED is OFF, synchronizing by simulating key press");
+                _synchronizingCapsLock = true;
+                try
+                {
+                    await _keySimulator.SimulateKeyPressAsync(_triggerKey);
+                    // Wait for LED state to update
+                    await Task.Delay(100);
+                }
+                finally
+                {
+                    _synchronizingCapsLock = false;
+                }
+            }
+
             // Play recording start notification sound (fire-and-forget)
             if (_soundPlayer != null && !string.IsNullOrWhiteSpace(_recordingStartSoundPath))
             {
@@ -232,6 +262,33 @@ public class DictationService : IDisposable, IAsyncDisposable
         {
             _logger.LogInformation("Stopping audio recording...");
             await _audioRecorder.StopRecordingAsync();
+
+            // Synchronize CapsLock LED IMMEDIATELY after stopping recording (for web remote control)
+            // If CapsLock is ON, simulate key press to turn it OFF
+            // This MUST happen before transcription starts, not after!
+            try
+            {
+                var capsLockOn = _keyboardMonitor.IsCapsLockOn();
+                if (capsLockOn)
+                {
+                    _logger.LogInformation("CapsLock LED is ON, synchronizing by simulating key press (before transcription)");
+                    _synchronizingCapsLock = true;
+                    try
+                    {
+                        await _keySimulator.SimulateKeyPressAsync(_triggerKey);
+                        // Wait for LED state to update
+                        await Task.Delay(100);
+                    }
+                    finally
+                    {
+                        _synchronizingCapsLock = false;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to synchronize CapsLock LED after recording stop");
+            }
 
             // Notify VirtualAssistant to release speech lock immediately after recording stops
             // This allows TTS to play while Whisper transcribes (they're independent)

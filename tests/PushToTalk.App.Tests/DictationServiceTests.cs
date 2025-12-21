@@ -11,6 +11,7 @@ public class DictationServiceTests : IDisposable
 {
     private readonly Mock<ILogger<DictationService>> _loggerMock;
     private readonly Mock<IKeyboardMonitor> _keyboardMonitorMock;
+    private readonly Mock<IKeySimulator> _keySimulatorMock;
     private readonly Mock<IAudioRecorder> _audioRecorderMock;
     private readonly Mock<ITranscriptionCoordinator> _transcriptionCoordinatorMock;
     private readonly Mock<ITextOutputHandler> _textOutputHandlerMock;
@@ -20,13 +21,18 @@ public class DictationServiceTests : IDisposable
     {
         _loggerMock = new Mock<ILogger<DictationService>>();
         _keyboardMonitorMock = new Mock<IKeyboardMonitor>();
+        _keySimulatorMock = new Mock<IKeySimulator>();
         _audioRecorderMock = new Mock<IAudioRecorder>();
         _transcriptionCoordinatorMock = new Mock<ITranscriptionCoordinator>();
         _textOutputHandlerMock = new Mock<ITextOutputHandler>();
 
+        // Setup default: CapsLock LED is always OFF (so synchronization won't trigger)
+        _keyboardMonitorMock.Setup(k => k.IsCapsLockOn()).Returns(false);
+
         _service = new DictationService(
             _loggerMock.Object,
             _keyboardMonitorMock.Object,
+            _keySimulatorMock.Object,
             _audioRecorderMock.Object,
             _transcriptionCoordinatorMock.Object,
             _textOutputHandlerMock.Object);
