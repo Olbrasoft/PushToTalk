@@ -22,7 +22,8 @@
   <ItemGroup>
     <ProjectReference Include="..\PushToTalk.Core\PushToTalk.Core.csproj" />
     <ProjectReference Include="..\PushToTalk.Linux\PushToTalk.Linux.csproj" />
-    <ProjectReference Include="..\..\..\SystemTray\src\SystemTray.Linux\SystemTray.Linux.csproj" />
+    <ProjectReference Include="..\..\SystemTray\src\SystemTray.Linux\SystemTray.Linux.csproj" Condition="Exists('..\..\SystemTray\src\SystemTray.Linux\SystemTray.Linux.csproj')" />
+    <ProjectReference Include="..\..\..\SystemTray\src\SystemTray.Linux\SystemTray.Linux.csproj" Condition="!Exists('..\..\SystemTray\src\SystemTray.Linux\SystemTray.Linux.csproj')" />
   </ItemGroup>
 
   <!-- ASP.NET Core for embedded web server and SignalR -->
