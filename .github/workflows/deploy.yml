@@ -1,0 +1,22 @@
+name: Deploy to Production
+
+on:
+  workflow_run:
+    workflows: ["Build and Test"]
+    types:
+      - completed
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: self-hosted
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+
+    steps:
+    - name: Deploy PushToTalk
+      run: |
+        echo "🚀 Deploying PushToTalk to /opt/olbrasoft/push-to-talk..."
+        cd /home/jirka/Olbrasoft/PushToTalk
+        git pull origin main
+        sudo ./deploy/deploy.sh /opt/olbrasoft/push-to-talk --no-version-bump
+        echo "✅ Deployment completed"

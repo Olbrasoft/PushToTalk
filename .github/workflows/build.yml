@@ -6,12 +6,22 @@ on:
   pull_request:
     branches: [main]
 
+env:
+  VERSION_PREFIX: "1.0"
+
 jobs:
   build:
     runs-on: ubuntu-latest
 
     steps:
     - uses: actions/checkout@v4
+
+    - name: Calculate version
+      id: version
+      run: |
+        VERSION="${{ env.VERSION_PREFIX }}.${{ github.run_number }}"
+        echo "version=$VERSION" >> $GITHUB_OUTPUT
+        echo "Building version: $VERSION"
 
     - name: Checkout SystemTray dependency
       uses: actions/checkout@v4
@@ -26,9 +36,9 @@ jobs:
 
     - name: Restore dependencies
       run: dotnet restore
-    
+
     - name: Build
-      run: dotnet build --no-restore --configuration Release
-    
+      run: dotnet build --no-restore --configuration Release -p:Version=${{ steps.version.outputs.version }}
+
     - name: Test
       run: dotnet test --no-build --configuration Release --verbosity normal

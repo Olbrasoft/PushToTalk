@@ -13,7 +13,9 @@
 
     <!-- Debian package metadata -->
     <PackageId>push-to-talk</PackageId>
-    <Version>1.0.44</Version>
+    <!-- Version is auto-calculated in CI/CD as 1.0.${{ github.run_number }} -->
+    <!-- This is fallback for local builds only -->
+    <Version>1.0.0-local</Version>
     <Description>Voice transcription using Whisper AI</Description>
     <Authors>Olbrasoft</Authors>
     <DebMaintainer>Olbrasoft</DebMaintainer>
