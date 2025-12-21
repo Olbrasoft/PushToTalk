@@ -9,15 +9,21 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    
+
     steps:
     - uses: actions/checkout@v4
-    
+
+    - name: Checkout SystemTray dependency
+      uses: actions/checkout@v4
+      with:
+        repository: Olbrasoft/SystemTray
+        path: SystemTray
+
     - name: Setup .NET
       uses: actions/setup-dotnet@v4
       with:
         dotnet-version: '10.0.x'
-    
+
     - name: Restore dependencies
       run: dotnet restore
     
