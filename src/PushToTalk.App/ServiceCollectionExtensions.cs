@@ -173,12 +173,20 @@ public static class ServiceCollectionExtensions
             return new TrayIconManager(logger, loggerFactory, iconRenderer);
         });
 
+        // DBus menu handler for tray icon context menu
+        services.AddSingleton<ITrayMenuHandler>(sp =>
+        {
+            var logger = sp.GetRequiredService<ILogger<DBusMenuHandler>>();
+            return new DBusMenuHandler(logger);
+        });
+
         // PushToTalk tray service (wrapper for main + animated icons)
         services.AddSingleton(sp =>
         {
             var logger = sp.GetRequiredService<ILogger<PushToTalkTrayService>>();
             var manager = sp.GetRequiredService<TrayIconManager>();
-            return new PushToTalkTrayService(logger, manager, iconsPath);
+            var menuHandler = sp.GetRequiredService<ITrayMenuHandler>();
+            return new PushToTalkTrayService(logger, manager, iconsPath, menuHandler);
         });
 
         return services;

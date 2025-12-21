@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Logging;
+using Olbrasoft.SystemTray.Linux;
 using Tmds.DBus.Protocol;
 using Tmds.DBus.SourceGenerator;
 
@@ -8,9 +9,9 @@ namespace Olbrasoft.PushToTalk.App;
 /// D-Bus handler for com.canonical.dbusmenu interface.
 /// Provides context menu for the tray icon with Quit and About items.
 /// </summary>
-internal class DBusMenuHandler : ComCanonicalDbusmenuHandler
+internal class DBusMenuHandler : ComCanonicalDbusmenuHandler, ITrayMenuHandler
 {
-    private readonly Connection _connection;
+    private Connection? _connection;
     private readonly ILogger _logger;
     private uint _revision = 1;
 
@@ -45,9 +46,8 @@ internal class DBusMenuHandler : ComCanonicalDbusmenuHandler
     private string _sttServiceStatus = "Checking...";
     private string _sttServiceVersion = "Unknown";
 
-    public DBusMenuHandler(Connection connection, ILogger logger) : base(emitOnCapturedContext: false)
+    public DBusMenuHandler(ILogger logger) : base(emitOnCapturedContext: false)
     {
-        _connection = connection;
         _logger = logger;
 
         // Set D-Bus properties
@@ -57,7 +57,16 @@ internal class DBusMenuHandler : ComCanonicalDbusmenuHandler
         IconThemePath = Array.Empty<string>();
     }
 
-    public override Connection Connection => _connection;
+    public override Connection Connection => _connection ?? throw new InvalidOperationException("Connection not set. TrayIcon will set this during initialization.");
+
+    /// <summary>
+    /// Initializes the menu handler with a D-Bus connection.
+    /// Called by TrayIcon during initialization.
+    /// </summary>
+    public void InitializeConnection(Connection connection)
+    {
+        _connection = connection;
+    }
 
     /// <summary>
     /// Updates SpeechToText service status and version in menu.
@@ -68,8 +77,12 @@ internal class DBusMenuHandler : ComCanonicalDbusmenuHandler
         _sttServiceVersion = version;
         _revision++;
 
-        // Emit LayoutUpdated signal to notify menu changed
-        EmitLayoutUpdated(_revision, RootId);
+        // Emit LayoutUpdated signal only if connection and PathHandler are initialized
+        // PathHandler is set by TrayIcon when registering the menu handler
+        if (_connection != null && PathHandler != null)
+        {
+            EmitLayoutUpdated(_revision, RootId);
+        }
     }
 
     /// <summary>
