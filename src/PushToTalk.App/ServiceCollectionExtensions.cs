@@ -25,6 +25,9 @@ public static class ServiceCollectionExtensions
         DictationOptions options,
         IConfiguration configuration)
     {
+        // Register IConfiguration for NotificationAudio (LinuxAudioSinkSelector needs it)
+        services.AddSingleton(configuration);
+
         // NotificationAudio for playing transcription sound
         services.AddNotificationAudio();
 
