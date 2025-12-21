@@ -303,6 +303,8 @@ try
             {
                 logger.LogInformation("SpeechToText service stopped successfully");
                 trayService.UpdateSpeechToTextStatus(false, sttServiceManager.GetVersion());
+                trayService.SetIcon("push-to-talk-off");
+                trayService.SetTooltip("Push To Talk (Service Stopped)");
             }
         };
 
@@ -318,6 +320,8 @@ try
                 await Task.Delay(1000);
                 var isRunning = await sttServiceManager.IsRunningAsync();
                 trayService.UpdateSpeechToTextStatus(isRunning, sttServiceManager.GetVersion());
+                trayService.SetIcon("push-to-talk");
+                trayService.SetTooltip("Push To Talk");
             }
             else
             {
@@ -349,11 +353,25 @@ try
                 logger.LogInformation("SpeechToText service status: {Status}, version: {Version}",
                     isRunning ? "Running" : "Stopped", version);
                 trayService.UpdateSpeechToTextStatus(isRunning, version);
+
+                // Set icon based on service status
+                if (isRunning)
+                {
+                    trayService.SetIcon("push-to-talk");
+                    trayService.SetTooltip("Push To Talk");
+                }
+                else
+                {
+                    trayService.SetIcon("push-to-talk-off");
+                    trayService.SetTooltip("Push To Talk (Service Stopped)");
+                }
             }
             catch (Exception ex)
             {
                 logger.LogError(ex, "Failed to check/start SpeechToText service");
                 trayService.UpdateSpeechToTextStatus(false, "Unknown");
+                trayService.SetIcon("push-to-talk-off");
+                trayService.SetTooltip("Push To Talk (Service Error)");
             }
         }).FireAndForget(logger, "SttServiceCheck");
     }
