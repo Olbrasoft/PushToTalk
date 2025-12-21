@@ -8,6 +8,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Logging;
 using Olbrasoft.PushToTalk.App;
+using Olbrasoft.PushToTalk.App.Configuration;
 using Olbrasoft.PushToTalk.App.Hubs;
 using Olbrasoft.PushToTalk.App.Services;
 using Olbrasoft.PushToTalk.App.Tray;
@@ -33,6 +34,18 @@ var config = new ConfigurationBuilder()
 
 var options = new DictationOptions();
 config.GetSection(DictationOptions.SectionName).Bind(options);
+
+// Load web server configuration
+var webServerOptions = new WebServerOptions();
+config.GetSection("WebServer").Bind(webServerOptions);
+
+// Load tray icon configuration
+var trayIconOptions = new TrayIconOptions();
+config.GetSection("TrayIcon").Bind(trayIconOptions);
+
+// Validate configuration
+ConfigurationValidator.ValidateWebServerOptions(webServerOptions);
+ConfigurationValidator.ValidateTrayIconOptions(trayIconOptions);
 
 // Get port from config or use default
 var webPort = config.GetValue<int>("WebServer:Port", ServiceEndpoints.DefaultWebServerPort);
@@ -63,7 +76,7 @@ var services = new ServiceCollection();
 services.AddSingleton(loggerFactory);
 services.AddSingleton(typeof(ILogger<>), typeof(Logger<>));
 services.AddDictationServices(options, config);
-services.AddTrayServices(options, iconsPath);
+services.AddTrayServices(options, iconsPath, trayIconOptions);
 
 using var serviceProvider = services.BuildServiceProvider();
 
@@ -85,16 +98,22 @@ var webBuilder = WebApplication.CreateBuilder();
 // Configure Kestrel endpoints (HTTP + HTTPS for PWA)
 webBuilder.WebHost.ConfigureKestrel((context, serverOptions) =>
 {
-    serverOptions.ListenAnyIP(5050); // HTTP
+    serverOptions.ListenAnyIP(webServerOptions.Port); // HTTP
 
-    // HTTPS only if certificate exists (for PWA installation)
-    var certPath = Path.Combine(AppContext.BaseDirectory, "certs", "192.168.0.182+3.p12");
-    if (File.Exists(certPath))
+    // HTTPS only if configured and certificate exists (for PWA installation)
+    if (webServerOptions.Https != null)
     {
-        serverOptions.ListenAnyIP(5051, listenOptions =>
+        var certPath = Path.IsPathRooted(webServerOptions.Https.CertificatePath)
+            ? webServerOptions.Https.CertificatePath
+            : Path.Combine(AppContext.BaseDirectory, webServerOptions.Https.CertificatePath);
+
+        if (File.Exists(certPath))
         {
-            listenOptions.UseHttps(certPath, "changeit");
-        });
+            serverOptions.ListenAnyIP(webServerOptions.Https.Port, listenOptions =>
+            {
+                listenOptions.UseHttps(certPath, webServerOptions.Https.CertificatePassword);
+            });
+        }
     }
 });
 webBuilder.Logging.ClearProviders();
@@ -396,8 +415,11 @@ try
     }).FireAndForget(logger, "WebServer");
 
     Console.WriteLine("Web server started:");
-    Console.WriteLine("  HTTP:  http://localhost:5050/remote.html");
-    Console.WriteLine("  HTTPS: https://localhost:5051/remote.html (for PWA installation)");
+    Console.WriteLine($"  HTTP:  http://localhost:{webServerOptions.Port}/remote.html");
+    if (webServerOptions.Https != null)
+    {
+        Console.WriteLine($"  HTTPS: https://localhost:{webServerOptions.Https.Port}/remote.html (for PWA installation)");
+    }
 
     // Start keyboard monitoring in background
     Task.Run(async () =>

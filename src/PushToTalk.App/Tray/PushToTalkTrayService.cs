@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Logging;
+using Olbrasoft.PushToTalk.App.Configuration;
 using Olbrasoft.SystemTray.Linux;
 
 namespace Olbrasoft.PushToTalk.App.Tray;
@@ -13,6 +14,7 @@ public class PushToTalkTrayService : IDisposable
     private readonly ILogger<PushToTalkTrayService> _logger;
     private readonly string _iconsPath;
     private readonly string[] _animationFrames;
+    private readonly int _animationIntervalMs;
     private readonly ITrayMenuHandler? _menuHandler;
 
     private ITrayIcon? _mainIcon;
@@ -33,21 +35,18 @@ public class PushToTalkTrayService : IDisposable
         ILogger<PushToTalkTrayService> logger,
         TrayIconManager manager,
         string iconsPath,
+        TrayIconOptions trayIconOptions,
         ITrayMenuHandler? menuHandler = null)
     {
         _logger = logger;
         _manager = manager;
         _iconsPath = iconsPath;
         _menuHandler = menuHandler;
+        _animationIntervalMs = trayIconOptions.Animation.IntervalMs;
 
-        _animationFrames = new[]
-        {
-            Path.Combine(iconsPath, "document-white-frame1.svg"),
-            Path.Combine(iconsPath, "document-white-frame2.svg"),
-            Path.Combine(iconsPath, "document-white-frame3.svg"),
-            Path.Combine(iconsPath, "document-white-frame4.svg"),
-            Path.Combine(iconsPath, "document-white-frame5.svg")
-        };
+        _animationFrames = trayIconOptions.Animation.Frames
+            .Select(frame => Path.Combine(iconsPath, frame))
+            .ToArray();
 
         // Connect menu handler events to our events
         if (_menuHandler is DBusMenuHandler dbusMenuHandler)
@@ -110,7 +109,7 @@ public class PushToTalkTrayService : IDisposable
 
             if (_animatedIcon != null)
             {
-                _animatedIcon.StartAnimation(_animationFrames, intervalMs: 150);
+                _animatedIcon.StartAnimation(_animationFrames, intervalMs: _animationIntervalMs);
             }
         }
         catch (Exception ex)
