@@ -52,7 +52,7 @@ public class PushToTalkTrayService : IDisposable
         try
         {
             var iconPath = Path.Combine(_iconsPath, "push-to-talk.svg");
-            _mainIcon = await _manager.CreateIconAsync("push-to-talk-main", iconPath, "Push To Talk");
+            _mainIcon = await _manager.CreateIconAsync("push-to-talk-main", iconPath, "Push To Talk", null);
             _currentIconPath = iconPath;
             _currentTooltip = "Push To Talk";
 
@@ -92,7 +92,8 @@ public class PushToTalkTrayService : IDisposable
             _animatedIcon = await _manager.CreateIconAsync(
                 "push-to-talk-animated",
                 _animationFrames[0],
-                "Transcribing..."
+                "Transcribing...",
+                null
             );
 
             if (_animatedIcon != null)

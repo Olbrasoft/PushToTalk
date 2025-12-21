@@ -192,6 +192,26 @@ elements.btnToggle.addEventListener('pointerdown', () => {
     }
 });
 
+// Haptic feedback for Enter button
+elements.btnEnter.addEventListener('pointerdown', () => {
+    if (elements.btnEnter.disabled) return;
+
+    if ('vibrate' in navigator) {
+        navigator.vibrate(50); // Medium vibration for Enter
+        console.log('Enter button haptic feedback');
+    }
+});
+
+// Haptic feedback for Clear button (Ctrl+U)
+elements.btnClear.addEventListener('pointerdown', () => {
+    if (elements.btnClear.disabled) return;
+
+    if ('vibrate' in navigator) {
+        navigator.vibrate(50); // Medium vibration for Clear
+        console.log('Clear button haptic feedback');
+    }
+});
+
 // Button handlers
 elements.btnToggle.addEventListener('click', async () => {
     try {
