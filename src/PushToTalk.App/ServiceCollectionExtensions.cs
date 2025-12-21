@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Olbrasoft.PushToTalk.App.Configuration;
 using Olbrasoft.PushToTalk.App.Services;
 using Olbrasoft.PushToTalk.App.Tray;
 using Olbrasoft.PushToTalk.Audio;
@@ -152,7 +153,8 @@ public static class ServiceCollectionExtensions
     public static IServiceCollection AddTrayServices(
         this IServiceCollection services,
         DictationOptions options,
-        string iconsPath)
+        string iconsPath,
+        TrayIconOptions trayIconOptions)
     {
         // SpeechToText service manager for status checking and control
         services.AddSingleton<SpeechToTextServiceManager>();
@@ -186,7 +188,7 @@ public static class ServiceCollectionExtensions
             var logger = sp.GetRequiredService<ILogger<PushToTalkTrayService>>();
             var manager = sp.GetRequiredService<TrayIconManager>();
             var menuHandler = sp.GetRequiredService<ITrayMenuHandler>();
-            return new PushToTalkTrayService(logger, manager, iconsPath, menuHandler);
+            return new PushToTalkTrayService(logger, manager, iconsPath, trayIconOptions, menuHandler);
         });
 
         return services;
