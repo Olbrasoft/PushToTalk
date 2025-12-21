@@ -38,7 +38,7 @@ public static class IconsPathResolver
             if (Directory.Exists(fullPath))
             {
                 // Verify at least one expected icon exists
-                var testIcon = Path.Combine(fullPath, "trigger-ptt.svg");
+                var testIcon = Path.Combine(fullPath, "push-to-talk.svg");
                 if (File.Exists(testIcon))
                 {
                     logger?.LogInformation("Icons found at: {Path}", fullPath);

@@ -34,6 +34,7 @@ public class DictationService : IDisposable, IAsyncDisposable
     private readonly string? _recordingStartSoundPath;
     private readonly KeyCode _triggerKey;
     private readonly KeyCode _cancelKey;
+    private Func<Task<bool>>? _serviceAvailabilityCheck;
 
     private DictationState _state = DictationState.Idle;
     private readonly object _stateLock = new();
@@ -80,6 +81,14 @@ public class DictationService : IDisposable, IAsyncDisposable
         _recordingStartSoundPath = recordingStartSoundPath;
         _triggerKey = triggerKey;
         _cancelKey = cancelKey;
+    }
+
+    /// <summary>
+    /// Sets a callback to check if the transcription service is available before starting recording.
+    /// </summary>
+    public void SetServiceAvailabilityCheck(Func<Task<bool>> check)
+    {
+        _serviceAvailabilityCheck = check;
     }
 
     /// <summary>
@@ -131,11 +140,25 @@ public class DictationService : IDisposable, IAsyncDisposable
         _logger.LogDebug("{TriggerKey} released, CapsLock LED: {CapsLockOn}, current state: {State}",
             _triggerKey, capsLockOn, _state);
 
-        // CapsLock ON + Idle → start recording
+        // CapsLock ON + Idle → start recording (check service availability first)
         if (capsLockOn && _state == DictationState.Idle)
         {
-            _logger.LogInformation("{TriggerKey} pressed, CapsLock ON - starting dictation", _triggerKey);
-            Task.Run(() => StartDictationAsync()).FireAndForget(_logger, "StartDictation");
+            _logger.LogInformation("{TriggerKey} pressed, CapsLock ON - checking service availability", _triggerKey);
+            Task.Run(async () =>
+            {
+                // Check if transcription service is available
+                if (_serviceAvailabilityCheck != null)
+                {
+                    var isAvailable = await _serviceAvailabilityCheck();
+                    if (!isAvailable)
+                    {
+                        _logger.LogWarning("SpeechToText service is not running - cannot start dictation");
+                        return;
+                    }
+                }
+
+                await StartDictationAsync();
+            }).FireAndForget(_logger, "StartDictation");
         }
         // CapsLock OFF + Recording → stop recording and transcribe
         else if (!capsLockOn && _state == DictationState.Recording)

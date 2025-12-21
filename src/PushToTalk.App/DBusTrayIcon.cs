@@ -249,7 +249,7 @@ public class DBusTrayIcon : IDisposable
     /// <summary>
     /// Sets the tray icon from an SVG file name (without path and extension).
     /// </summary>
-    /// <param name="iconName">Icon name, e.g., "trigger-ptt"</param>
+    /// <param name="iconName">Icon name, e.g., "push-to-talk"</param>
     public void SetIcon(string iconName)
     {
         if (_isDisposed)
@@ -406,13 +406,13 @@ public class DBusTrayIcon : IDisposable
         if (isRunning)
         {
             // Service running - show normal icon
-            SetIcon("trigger-ptt");
+            SetIcon("push-to-talk");
             _logger.LogInformation("SpeechToText service is running - showing normal icon");
         }
         else
         {
             // Service not running - show "off" icon (crossed out)
-            SetIcon("speech-to-text-off");
+            SetIcon("push-to-talk-off");
             _logger.LogInformation("SpeechToText service is not running - showing 'off' icon");
         }
     }

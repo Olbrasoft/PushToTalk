@@ -75,6 +75,9 @@ var sttServiceManager = serviceProvider.GetRequiredService<SpeechToTextServiceMa
 var textTyperFactory = serviceProvider.GetRequiredService<Olbrasoft.PushToTalk.TextInput.ITextTyperFactory>();
 logger.LogInformation("Text typer: {DisplayServer}", textTyperFactory.GetDisplayServerName());
 
+// Set service availability check for DictationService
+dictationService.SetServiceAvailabilityCheck(async () => await sttServiceManager.IsRunningAsync());
+
 var cts = new CancellationTokenSource();
 
 // Build web application for SignalR and remote control
@@ -202,7 +205,7 @@ try
 {
     // Pre-set initial icon BEFORE initialization so it's available during D-Bus registration
     // (CreateTrayIconAsync uses _currentIcon when registering with StatusNotifierWatcher)
-    dbusTrayIcon.SetIcon("trigger-ptt");
+    dbusTrayIcon.SetIcon("push-to-talk");
     dbusTrayIcon.SetTooltip("Push To Talk - Idle");
 
     // Initialize D-Bus tray icons (main + animated use unique paths to avoid duplicate detection - issue #62)
@@ -222,17 +225,27 @@ try
             {
                 case DictationState.Idle:
                     animatedIcon.Hide();
-                    dbusTrayIcon.SetIcon("trigger-ptt");
-                    dbusTrayIcon.SetTooltip("Push To Talk - Idle");
+                    // Check if SpeechToText service is running and show appropriate icon
+                    var isRunning = await sttServiceManager.IsRunningAsync();
+                    if (isRunning)
+                    {
+                        dbusTrayIcon.SetIcon("push-to-talk");
+                        dbusTrayIcon.SetTooltip("Push To Talk - Idle");
+                    }
+                    else
+                    {
+                        dbusTrayIcon.SetIcon("push-to-talk-off");
+                        dbusTrayIcon.SetTooltip("Push To Talk - Service Stopped");
+                    }
                     break;
                 case DictationState.Recording:
                     animatedIcon.Hide();
-                    dbusTrayIcon.SetIcon("trigger-ptt-recording");
+                    dbusTrayIcon.SetIcon("push-to-talk-recording");
                     dbusTrayIcon.SetTooltip("Push To Talk - Recording...");
                     break;
                 case DictationState.Transcribing:
                     // Change icon back to white immediately when recording stops (issue #28)
-                    dbusTrayIcon.SetIcon("trigger-ptt");
+                    dbusTrayIcon.SetIcon("push-to-talk");
                     dbusTrayIcon.SetTooltip("Push To Talk - Transcribing...");
                     // Show animated icon NEXT TO main icon (main stays visible)
                     await animatedIcon.ShowAsync();
