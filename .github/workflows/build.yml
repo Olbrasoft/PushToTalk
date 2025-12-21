@@ -17,7 +17,7 @@ jobs:
       uses: actions/checkout@v4
       with:
         repository: Olbrasoft/SystemTray
-        path: SystemTray
+        path: ../SystemTray
 
     - name: Setup .NET
       uses: actions/setup-dotnet@v4
