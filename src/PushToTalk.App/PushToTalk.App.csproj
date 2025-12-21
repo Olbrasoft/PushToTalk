@@ -22,6 +22,7 @@
   <ItemGroup>
     <ProjectReference Include="..\PushToTalk.Core\PushToTalk.Core.csproj" />
     <ProjectReference Include="..\PushToTalk.Linux\PushToTalk.Linux.csproj" />
+    <ProjectReference Include="..\..\..\SystemTray\src\SystemTray.Linux\SystemTray.Linux.csproj" />
   </ItemGroup>
 
   <!-- ASP.NET Core for embedded web server and SignalR -->
@@ -34,7 +35,6 @@
     <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="10.0.0" />
     <PackageReference Include="Microsoft.Extensions.Configuration" Version="10.0.0" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="10.0.0" />
-    <PackageReference Include="Olbrasoft.SystemTray.Linux" Version="*" />
     <PackageReference Include="Packaging.Targets" Version="0.1.232">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
