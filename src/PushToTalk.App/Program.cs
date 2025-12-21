@@ -8,6 +8,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Logging;
 using Olbrasoft.PushToTalk.App;
+using Olbrasoft.PushToTalk.App.Api;
 using Olbrasoft.PushToTalk.App.Configuration;
 using Olbrasoft.PushToTalk.App.Hubs;
 using Olbrasoft.PushToTalk.App.Services;
@@ -163,59 +164,8 @@ if (Directory.Exists(wwwrootPath))
 // Map SignalR hub
 webApp.MapHub<DictationHub>("/hubs/dictation");
 
-// Map status endpoint
-webApp.MapGet("/api/status", () => new
-{
-    IsRecording = dictationService.State == DictationState.Recording,
-    IsTranscribing = dictationService.State == DictationState.Transcribing,
-    State = dictationService.State.ToString()
-});
-
-// Map control endpoints
-webApp.MapPost("/api/recording/start", async () =>
-{
-    if (dictationService.State == DictationState.Idle)
-    {
-        await dictationService.StartDictationAsync();
-        return Results.Ok(new { Success = true });
-    }
-    return Results.BadRequest(new { Success = false, Error = "Already recording or transcribing" });
-});
-
-webApp.MapPost("/api/recording/stop", async () =>
-{
-    if (dictationService.State == DictationState.Recording)
-    {
-        await dictationService.StopDictationAsync();
-        return Results.Ok(new { Success = true });
-    }
-    return Results.BadRequest(new { Success = false, Error = "Not recording" });
-});
-
-webApp.MapPost("/api/recording/toggle", async () =>
-{
-    if (dictationService.State == DictationState.Idle)
-    {
-        await dictationService.StartDictationAsync();
-        return Results.Ok(new { Success = true, IsRecording = true });
-    }
-    else if (dictationService.State == DictationState.Recording)
-    {
-        await dictationService.StopDictationAsync();
-        return Results.Ok(new { Success = true, IsRecording = false });
-    }
-    return Results.BadRequest(new { Success = false, Error = "Transcription in progress" });
-});
-
-webApp.MapPost("/api/recording/cancel", () =>
-{
-    if (dictationService.State == DictationState.Transcribing)
-    {
-        dictationService.CancelTranscription();
-        return Results.Ok(new { Success = true });
-    }
-    return Results.BadRequest(new { Success = false, Error = "Not transcribing" });
-});
+// Map dictation API endpoints
+webApp.MapDictationEndpoints();
 
 // Get SignalR hub context for broadcasting
 var hubContext = webApp.Services.GetRequiredService<IHubContext<DictationHub>>();
