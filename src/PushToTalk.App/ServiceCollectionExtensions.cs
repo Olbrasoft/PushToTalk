@@ -5,7 +5,6 @@ using Olbrasoft.PushToTalk.App.Services;
 using Olbrasoft.PushToTalk.Audio;
 using Olbrasoft.PushToTalk.Linux.Speech;
 using Olbrasoft.PushToTalk.TextInput;
-using Olbrasoft.SystemTray.Linux;
 
 namespace Olbrasoft.PushToTalk.App;
 
@@ -154,28 +153,26 @@ public static class ServiceCollectionExtensions
         // SpeechToText service manager for status checking and control
         services.AddSingleton<SpeechToTextServiceManager>();
 
-        // Icon renderer (shared between all icons)
-        services.AddSingleton<IIconRenderer>(sp =>
-        {
-            var logger = sp.GetRequiredService<ILogger<IconRenderer>>();
-            return new IconRenderer(logger, options.IconSize);
-        });
-
-        // Tray icon manager for managing multiple icons
-        services.AddSingleton<ITrayIconManager>(sp =>
-        {
-            var logger = sp.GetRequiredService<ILogger<TrayIconManager>>();
-            var loggerFactory = sp.GetRequiredService<ILoggerFactory>();
-            var iconRenderer = sp.GetRequiredService<IIconRenderer>();
-            return new TrayIconManager(logger, loggerFactory, iconRenderer);
-        });
-
-        // Main tray icon wrapper for backward compatibility
+        // Main tray icon (D-Bus StatusNotifierItem)
         services.AddSingleton(sp =>
         {
-            var manager = sp.GetRequiredService<ITrayIconManager>();
-            var logger = sp.GetRequiredService<ILogger<TrayIconWrapper>>();
-            return new TrayIconWrapper(manager, logger, iconsPath);
+            var logger = sp.GetRequiredService<ILogger<DBusTrayIcon>>();
+            return new DBusTrayIcon(logger, iconsPath, options.IconSize);
+        });
+
+        // Animated tray icon (separate instance for transcription animation)
+        services.AddSingleton(sp =>
+        {
+            var logger = sp.GetRequiredService<ILogger<DBusAnimatedIcon>>();
+            var frameNames = new[]
+            {
+                "document-white-frame1",
+                "document-white-frame2",
+                "document-white-frame3",
+                "document-white-frame4",
+                "document-white-frame5"
+            };
+            return new DBusAnimatedIcon(logger, iconsPath, frameNames, options.IconSize);
         });
 
         return services;
