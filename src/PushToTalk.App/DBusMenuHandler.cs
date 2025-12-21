@@ -37,6 +37,11 @@ internal class DBusMenuHandler : ComCanonicalDbusmenuHandler
     /// </summary>
     public event Action? OnStopSpeechToTextRequested;
 
+    /// <summary>
+    /// Event fired when user wants to start SpeechToText service.
+    /// </summary>
+    public event Action? OnStartSpeechToTextRequested;
+
     private string _sttServiceStatus = "Checking...";
     private string _sttServiceVersion = "Unknown";
 
@@ -267,8 +272,16 @@ internal class DBusMenuHandler : ComCanonicalDbusmenuHandler
                     OnAboutRequested?.Invoke();
                     break;
                 case SpeechToTextServiceId:
-                    _logger.LogInformation("SpeechToText service menu item clicked");
-                    OnStopSpeechToTextRequested?.Invoke();
+                    _logger.LogInformation("SpeechToText service menu item clicked (status: {Status})", _sttServiceStatus);
+                    // Toggle service based on current status
+                    if (_sttServiceStatus == "Stopped")
+                    {
+                        OnStartSpeechToTextRequested?.Invoke();
+                    }
+                    else
+                    {
+                        OnStopSpeechToTextRequested?.Invoke();
+                    }
                     break;
             }
         }

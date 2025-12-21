@@ -297,6 +297,25 @@ try
             }
         };
 
+        // Handle SpeechToText service start request
+        dbusTrayIcon.OnStartSpeechToTextRequested += async () =>
+        {
+            logger.LogInformation("Starting SpeechToText service...");
+            var started = await sttServiceManager.StartAsync();
+            if (started)
+            {
+                logger.LogInformation("SpeechToText service started successfully");
+                // Wait a moment for service to fully start
+                await Task.Delay(1000);
+                var isRunning = await sttServiceManager.IsRunningAsync();
+                dbusTrayIcon.UpdateSpeechToTextStatus(isRunning, sttServiceManager.GetVersion());
+            }
+            else
+            {
+                logger.LogError("Failed to start SpeechToText service");
+            }
+        };
+
         // Check SpeechToText service status on startup
         Task.Run(async () =>
         {

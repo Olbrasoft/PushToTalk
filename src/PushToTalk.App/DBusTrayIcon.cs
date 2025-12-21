@@ -67,6 +67,8 @@ public class DBusTrayIcon : IDisposable
     /// </summary>
     public event Action? OnStopSpeechToTextRequested;
 
+    public event Action? OnStartSpeechToTextRequested;
+
     public DBusTrayIcon(ILogger<DBusTrayIcon> logger, string iconsPath, int iconSize = 22)
     {
         _logger = logger;
@@ -96,6 +98,7 @@ public class DBusTrayIcon : IDisposable
             _menuHandler.OnQuitRequested += () => OnQuitRequested?.Invoke();
             _menuHandler.OnAboutRequested += () => OnAboutRequested?.Invoke();
             _menuHandler.OnStopSpeechToTextRequested += () => OnStopSpeechToTextRequested?.Invoke();
+            _menuHandler.OnStartSpeechToTextRequested += () => OnStartSpeechToTextRequested?.Invoke();
 
             IsActive = true;
 
@@ -398,6 +401,20 @@ public class DBusTrayIcon : IDisposable
     public void UpdateSpeechToTextStatus(bool isRunning, string version)
     {
         _menuHandler?.UpdateSpeechToTextStatus(isRunning, version);
+
+        // Change icon based on service status
+        if (isRunning)
+        {
+            // Service running - show normal icon
+            SetIcon("trigger-ptt");
+            _logger.LogInformation("SpeechToText service is running - showing normal icon");
+        }
+        else
+        {
+            // Service not running - show "off" icon (crossed out)
+            SetIcon("speech-to-text-off");
+            _logger.LogInformation("SpeechToText service is not running - showing 'off' icon");
+        }
     }
 
     public void Dispose()
