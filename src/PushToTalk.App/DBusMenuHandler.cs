@@ -17,8 +17,10 @@ internal class DBusMenuHandler : ComCanonicalDbusmenuHandler
     // Menu item IDs
     private const int RootId = 0;
     private const int AboutId = 1;
-    private const int SeparatorId = 2;
-    private const int QuitId = 3;
+    private const int Separator1Id = 2;
+    private const int SpeechToTextServiceId = 3;
+    private const int Separator2Id = 4;
+    private const int QuitId = 5;
 
     /// <summary>
     /// Event fired when user selects Quit from the menu.
@@ -29,6 +31,14 @@ internal class DBusMenuHandler : ComCanonicalDbusmenuHandler
     /// Event fired when user selects About from the menu.
     /// </summary>
     public event Action? OnAboutRequested;
+
+    /// <summary>
+    /// Event fired when user wants to stop SpeechToText service.
+    /// </summary>
+    public event Action? OnStopSpeechToTextRequested;
+
+    private string _sttServiceStatus = "Checking...";
+    private string _sttServiceVersion = "Unknown";
 
     public DBusMenuHandler(Connection connection, ILogger logger) : base(emitOnCapturedContext: false)
     {
@@ -43,6 +53,19 @@ internal class DBusMenuHandler : ComCanonicalDbusmenuHandler
     }
 
     public override Connection Connection => _connection;
+
+    /// <summary>
+    /// Updates SpeechToText service status and version in menu.
+    /// </summary>
+    public void UpdateSpeechToTextStatus(bool isRunning, string version)
+    {
+        _sttServiceStatus = isRunning ? "Running" : "Stopped";
+        _sttServiceVersion = version;
+        _revision++;
+
+        // Emit LayoutUpdated signal to notify menu changed
+        EmitLayoutUpdated(_revision, RootId);
+    }
 
     /// <summary>
     /// Returns the menu layout starting from the specified parent ID.
@@ -81,7 +104,9 @@ internal class DBusMenuHandler : ComCanonicalDbusmenuHandler
                 children = new VariantValue[]
                 {
                     CreateChildVariant(AboutId, "About", false),
-                    CreateChildVariant(SeparatorId, "", true),
+                    CreateChildVariant(Separator1Id, "", true),
+                    CreateChildVariant(SpeechToTextServiceId, $"STT Service: {_sttServiceStatus} (v{_sttServiceVersion})", false),
+                    CreateChildVariant(Separator2Id, "", true),
                     CreateChildVariant(QuitId, "Quit", false)
                 };
             }
@@ -130,7 +155,16 @@ internal class DBusMenuHandler : ComCanonicalDbusmenuHandler
                 props["enabled"] = VariantValue.Bool(true);
                 props["visible"] = VariantValue.Bool(true);
                 break;
-            case SeparatorId:
+            case Separator1Id:
+                props["type"] = VariantValue.String("separator");
+                props["visible"] = VariantValue.Bool(true);
+                break;
+            case SpeechToTextServiceId:
+                props["label"] = VariantValue.String($"STT Service: {_sttServiceStatus} (v{_sttServiceVersion})");
+                props["enabled"] = VariantValue.Bool(_sttServiceStatus == "Running");
+                props["visible"] = VariantValue.Bool(true);
+                break;
+            case Separator2Id:
                 props["type"] = VariantValue.String("separator");
                 props["visible"] = VariantValue.Bool(true);
                 break;
@@ -170,7 +204,18 @@ internal class DBusMenuHandler : ComCanonicalDbusmenuHandler
                 ["enabled"] = VariantValue.Bool(true),
                 ["visible"] = VariantValue.Bool(true)
             }),
-            SeparatorId => (id, new Dictionary<string, VariantValue>
+            Separator1Id => (id, new Dictionary<string, VariantValue>
+            {
+                ["type"] = VariantValue.String("separator"),
+                ["visible"] = VariantValue.Bool(true)
+            }),
+            SpeechToTextServiceId => (id, new Dictionary<string, VariantValue>
+            {
+                ["label"] = VariantValue.String($"STT Service: {_sttServiceStatus} (v{_sttServiceVersion})"),
+                ["enabled"] = VariantValue.Bool(_sttServiceStatus == "Running"),
+                ["visible"] = VariantValue.Bool(true)
+            }),
+            Separator2Id => (id, new Dictionary<string, VariantValue>
             {
                 ["type"] = VariantValue.String("separator"),
                 ["visible"] = VariantValue.Bool(true)
@@ -220,6 +265,10 @@ internal class DBusMenuHandler : ComCanonicalDbusmenuHandler
                 case AboutId:
                     _logger.LogInformation("About menu item clicked");
                     OnAboutRequested?.Invoke();
+                    break;
+                case SpeechToTextServiceId:
+                    _logger.LogInformation("SpeechToText service menu item clicked");
+                    OnStopSpeechToTextRequested?.Invoke();
                     break;
             }
         }

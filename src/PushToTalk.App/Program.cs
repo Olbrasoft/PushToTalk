@@ -9,6 +9,7 @@ using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Logging;
 using Olbrasoft.PushToTalk.App;
 using Olbrasoft.PushToTalk.App.Hubs;
+using Olbrasoft.PushToTalk.App.Services;
 using Olbrasoft.PushToTalk.Core.Configuration;
 using Olbrasoft.PushToTalk.Core.Extensions;
 using Olbrasoft.PushToTalk.TextInput;
@@ -80,6 +81,7 @@ using var serviceProvider = services.BuildServiceProvider();
 var dictationService = serviceProvider.GetRequiredService<DictationService>();
 var dbusTrayIcon = serviceProvider.GetRequiredService<DBusTrayIcon>();
 var animatedIcon = serviceProvider.GetRequiredService<DBusAnimatedIcon>();
+var sttServiceManager = serviceProvider.GetRequiredService<SpeechToTextServiceManager>();
 
 logger.LogInformation("Whisper model loaded: {Path}", modelPath);
 var textTyperFactory = serviceProvider.GetRequiredService<Olbrasoft.PushToTalk.TextInput.ITextTyperFactory>();
@@ -294,6 +296,50 @@ try
             logger.LogInformation("About dialog requested");
             AboutDialog.Show(version);
         };
+
+        // Handle SpeechToText service stop request
+        dbusTrayIcon.OnStopSpeechToTextRequested += async () =>
+        {
+            logger.LogInformation("Stopping SpeechToText service...");
+            var stopped = await sttServiceManager.StopAsync();
+            if (stopped)
+            {
+                logger.LogInformation("SpeechToText service stopped successfully");
+                dbusTrayIcon.UpdateSpeechToTextStatus(false, sttServiceManager.GetVersion());
+            }
+        };
+
+        // Check SpeechToText service status on startup
+        Task.Run(async () =>
+        {
+            try
+            {
+                logger.LogInformation("Checking SpeechToText service status...");
+                var isRunning = await sttServiceManager.IsRunningAsync();
+                var version = sttServiceManager.GetVersion();
+
+                if (!isRunning)
+                {
+                    logger.LogInformation("SpeechToText service is not running, attempting to start...");
+                    var started = await sttServiceManager.StartAsync();
+                    if (started)
+                    {
+                        // Wait a moment for service to fully start
+                        await Task.Delay(1000);
+                        isRunning = await sttServiceManager.IsRunningAsync();
+                    }
+                }
+
+                logger.LogInformation("SpeechToText service status: {Status}, version: {Version}",
+                    isRunning ? "Running" : "Stopped", version);
+                dbusTrayIcon.UpdateSpeechToTextStatus(isRunning, version);
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Failed to check/start SpeechToText service");
+                dbusTrayIcon.UpdateSpeechToTextStatus(false, "Unknown");
+            }
+        }).FireAndForget(logger, "SttServiceCheck");
     }
     else
     {

@@ -150,6 +150,9 @@ public static class ServiceCollectionExtensions
         DictationOptions options,
         string iconsPath)
     {
+        // SpeechToText service manager for status checking and control
+        services.AddSingleton<SpeechToTextServiceManager>();
+
         // Main tray icon (uses unique D-Bus path to avoid auto-detection - issue #62)
         services.AddSingleton(sp =>
         {

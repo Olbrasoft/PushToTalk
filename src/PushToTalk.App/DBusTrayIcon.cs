@@ -62,6 +62,11 @@ public class DBusTrayIcon : IDisposable
     /// </summary>
     public event Action? OnAboutRequested;
 
+    /// <summary>
+    /// Event fired when user wants to stop SpeechToText service.
+    /// </summary>
+    public event Action? OnStopSpeechToTextRequested;
+
     public DBusTrayIcon(ILogger<DBusTrayIcon> logger, string iconsPath, int iconSize = 22)
     {
         _logger = logger;
@@ -90,6 +95,7 @@ public class DBusTrayIcon : IDisposable
             _menuHandler = new DBusMenuHandler(_connection, _logger);
             _menuHandler.OnQuitRequested += () => OnQuitRequested?.Invoke();
             _menuHandler.OnAboutRequested += () => OnAboutRequested?.Invoke();
+            _menuHandler.OnStopSpeechToTextRequested += () => OnStopSpeechToTextRequested?.Invoke();
 
             IsActive = true;
 
@@ -384,6 +390,14 @@ public class DBusTrayIcon : IDisposable
                 _sniHandler?.SetAnimationFrame(_currentIcon, _currentFrameIndex);
             }
         }
+    }
+
+    /// <summary>
+    /// Updates SpeechToText service status and version in the tray menu.
+    /// </summary>
+    public void UpdateSpeechToTextStatus(bool isRunning, string version)
+    {
+        _menuHandler?.UpdateSpeechToTextStatus(isRunning, version);
     }
 
     public void Dispose()

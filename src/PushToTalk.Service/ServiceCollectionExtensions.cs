@@ -3,7 +3,6 @@ using Microsoft.Extensions.Logging;
 using Olbrasoft.PushToTalk.Audio;
 using Olbrasoft.PushToTalk.Core.Interfaces;
 using Olbrasoft.PushToTalk.Service.Services;
-using Olbrasoft.PushToTalk.Speech;
 using Olbrasoft.PushToTalk.TextInput;
 
 // Disambiguate types that exist in multiple namespaces
