@@ -19,7 +19,6 @@ public class DictationOptionsTests
         var options = new DictationOptions();
 
         // Assert
-        Assert.Equal("models/ggml-medium.bin", options.GgmlModelPath);
         Assert.Equal("cs", options.WhisperLanguage);
         Assert.Equal("CapsLock", options.TriggerKey);
         Assert.Equal("Escape", options.CancelKey);
@@ -95,35 +94,6 @@ public class DictationOptionsTests
 
         // Assert
         Assert.Equal(KeyCode.Escape, result);
-    }
-
-    [Fact]
-    public void GetFullGgmlModelPath_WithRelativePath_ShouldCombineWithBaseDirectory()
-    {
-        // Arrange
-        var options = new DictationOptions { GgmlModelPath = "models/model.bin" };
-
-        // Act
-        var result = options.GetFullGgmlModelPath();
-
-        // Assert
-        Assert.Contains("models", result);
-        Assert.Contains("model.bin", result);
-        Assert.True(Path.IsPathRooted(result));
-    }
-
-    [Fact]
-    public void GetFullGgmlModelPath_WithAbsolutePath_ShouldReturnAsIs()
-    {
-        // Arrange
-        var absolutePath = "/home/user/models/model.bin";
-        var options = new DictationOptions { GgmlModelPath = absolutePath };
-
-        // Act
-        var result = options.GetFullGgmlModelPath();
-
-        // Assert
-        Assert.Equal(absolutePath, result);
     }
 
     [Fact]

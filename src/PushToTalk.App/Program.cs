@@ -54,17 +54,6 @@ Console.WriteLine("╚═══════════════════�
 Console.WriteLine();
 logger.LogInformation("PushToTalk version {Version} starting", version);
 
-// Validate Whisper model exists
-var modelPath = options.GetFullGgmlModelPath();
-if (!File.Exists(modelPath))
-{
-    logger.LogError("Whisper model not found: {Path}", modelPath);
-    Console.WriteLine($"ERROR: Whisper model not found at: {modelPath}");
-    Console.WriteLine("Please download a model and update appsettings.json");
-    Environment.Exit(1);
-    return;
-}
-
 // Find icons path
 var iconsPath = options.IconsPath ?? IconsPathResolver.FindIconsPath(logger);
 
@@ -83,7 +72,6 @@ var dbusTrayIcon = serviceProvider.GetRequiredService<DBusTrayIcon>();
 var animatedIcon = serviceProvider.GetRequiredService<DBusAnimatedIcon>();
 var sttServiceManager = serviceProvider.GetRequiredService<SpeechToTextServiceManager>();
 
-logger.LogInformation("Whisper model loaded: {Path}", modelPath);
 var textTyperFactory = serviceProvider.GetRequiredService<Olbrasoft.PushToTalk.TextInput.ITextTyperFactory>();
 logger.LogInformation("Text typer: {DisplayServer}", textTyperFactory.GetDisplayServerName());
 

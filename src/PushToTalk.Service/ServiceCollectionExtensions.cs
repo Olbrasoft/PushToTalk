@@ -26,8 +26,6 @@ public static class ServiceCollectionExtensions
     {
         // Get configuration values
         var keyboardDevice = configuration.GetValue<string?>("PushToTalkDictation:KeyboardDevice");
-        var ggmlModelPath = configuration.GetValue<string>("PushToTalkDictation:GgmlModelPath")
-            ?? Path.Combine(AppContext.BaseDirectory, "models", "ggml-medium.bin");
         var whisperLanguage = configuration.GetValue<string>("PushToTalkDictation:WhisperLanguage") ?? "cs";
 
         // SignalR
