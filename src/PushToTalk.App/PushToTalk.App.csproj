@@ -13,7 +13,7 @@
 
     <!-- Debian package metadata -->
     <PackageId>push-to-talk</PackageId>
-    <Version>1.0.35</Version>
+    <Version>1.0.36</Version>
     <Description>Voice transcription using Whisper AI</Description>
     <Authors>Olbrasoft</Authors>
     <DebMaintainer>Olbrasoft</DebMaintainer>
@@ -34,13 +34,12 @@
     <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="10.0.0" />
     <PackageReference Include="Microsoft.Extensions.Configuration" Version="10.0.0" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="10.0.0" />
-    <PackageReference Include="Olbrasoft.SystemTray.Linux" Version="1.0.0" />
     <PackageReference Include="Packaging.Targets" Version="0.1.232">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
+    <PackageReference Include="Tmds.DBus.Protocol" Version="0.21.2" />
     <!-- D-Bus for StatusNotifierItem tray icon (fixes GNOME icon caching) -->
-    <PackageReference Include="Tmds.DBus.Protocol" Version="0.22.0" />
     <PackageReference Include="Tmds.DBus.SourceGenerator" Version="0.0.21" PrivateAssets="all" />
     <!-- SVG rendering for icon pixmaps -->
     <PackageReference Include="Svg.Skia" Version="3.2.1" />
