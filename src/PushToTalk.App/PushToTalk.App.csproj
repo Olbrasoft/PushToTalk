@@ -34,16 +34,13 @@
     <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="10.0.0" />
     <PackageReference Include="Microsoft.Extensions.Configuration" Version="10.0.0" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="10.0.0" />
+    <PackageReference Include="Olbrasoft.SystemTray.Linux" Version="1.0.0" />
     <PackageReference Include="Packaging.Targets" Version="0.1.232">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
-    <PackageReference Include="Svg.Skia" Version="2.0.0.4" />
-    <PackageReference Include="Tmds.DBus.Protocol" Version="0.21.2" />
-    <!-- D-Bus for StatusNotifierItem tray icon (fixes GNOME icon caching) -->
+    <!-- D-Bus source generator for DBusMenu (context menu) -->
     <PackageReference Include="Tmds.DBus.SourceGenerator" Version="0.0.21" PrivateAssets="all" />
-    <!-- SVG rendering for icon pixmaps -->
-    <PackageReference Include="SkiaSharp.NativeAssets.Linux.NoDependencies" Version="2.88.9" />
   </ItemGroup>
 
   <!-- D-Bus source generator needs this to see DBusGeneratorMode metadata -->
@@ -51,11 +48,8 @@
     <CompilerVisibleItemMetadata Include="AdditionalFiles" MetadataName="DBusGeneratorMode" />
   </ItemGroup>
 
-  <!-- D-Bus XML interfaces for StatusNotifierItem and Menu -->
+  <!-- D-Bus XML interface for DBusMenu (context menu) - StatusNotifierItem is now in Olbrasoft.SystemTray.Linux -->
   <ItemGroup>
-    <AdditionalFiles Include="DBusXml/org.freedesktop.DBus.xml" DBusGeneratorMode="Proxy" />
-    <AdditionalFiles Include="DBusXml/org.kde.StatusNotifierWatcher.xml" DBusGeneratorMode="Proxy" />
-    <AdditionalFiles Include="DBusXml/org.kde.StatusNotifierItem.xml" DBusGeneratorMode="Handler" />
     <AdditionalFiles Include="DBusXml/com.canonical.dbusmenu.xml" DBusGeneratorMode="Handler" />
   </ItemGroup>
 

@@ -10,6 +10,7 @@ using Microsoft.Extensions.Logging;
 using Olbrasoft.PushToTalk.App;
 using Olbrasoft.PushToTalk.App.Hubs;
 using Olbrasoft.PushToTalk.App.Services;
+using Olbrasoft.PushToTalk.App.Tray;
 using Olbrasoft.PushToTalk.Core.Configuration;
 using Olbrasoft.PushToTalk.Core.Extensions;
 using Olbrasoft.PushToTalk.TextInput;
@@ -68,8 +69,7 @@ using var serviceProvider = services.BuildServiceProvider();
 
 // Get services
 var dictationService = serviceProvider.GetRequiredService<DictationService>();
-var dbusTrayIcon = serviceProvider.GetRequiredService<DBusTrayIcon>();
-var animatedIcon = serviceProvider.GetRequiredService<DBusAnimatedIcon>();
+var trayService = serviceProvider.GetRequiredService<PushToTalkTrayService>();
 var sttServiceManager = serviceProvider.GetRequiredService<SpeechToTextServiceManager>();
 
 var textTyperFactory = serviceProvider.GetRequiredService<Olbrasoft.PushToTalk.TextInput.ITextTyperFactory>();
@@ -203,16 +203,12 @@ var hubContext = webApp.Services.GetRequiredService<IHubContext<DictationHub>>()
 
 try
 {
-    // Pre-set initial icon BEFORE initialization so it's available during D-Bus registration
-    // (CreateTrayIconAsync uses _currentIcon when registering with StatusNotifierWatcher)
-    dbusTrayIcon.SetIcon("push-to-talk");
-    dbusTrayIcon.SetTooltip("Push To Talk - Idle");
+    // Initialize tray icon service
+    await trayService.InitializeMainIconAsync();
+    trayService.SetIcon("push-to-talk");
+    trayService.SetTooltip("Push To Talk - Idle");
 
-    // Initialize D-Bus tray icons (main + animated use unique paths to avoid duplicate detection - issue #62)
-    await dbusTrayIcon.InitializeAsync();
-    await animatedIcon.InitializeAsync();
-
-    if (dbusTrayIcon.IsActive)
+    if (trayService.IsActive)
     {
         Console.WriteLine("D-Bus tray icon initialized");
 
@@ -224,31 +220,31 @@ try
             switch (state)
             {
                 case DictationState.Idle:
-                    animatedIcon.Hide();
+                    trayService.HideAnimatedIcon();
                     // Check if SpeechToText service is running and show appropriate icon
                     var isRunning = await sttServiceManager.IsRunningAsync();
                     if (isRunning)
                     {
-                        dbusTrayIcon.SetIcon("push-to-talk");
-                        dbusTrayIcon.SetTooltip("Push To Talk - Idle");
+                        trayService.SetIcon("push-to-talk");
+                        trayService.SetTooltip("Push To Talk - Idle");
                     }
                     else
                     {
-                        dbusTrayIcon.SetIcon("push-to-talk-off");
-                        dbusTrayIcon.SetTooltip("Push To Talk - Service Stopped");
+                        trayService.SetIcon("push-to-talk-off");
+                        trayService.SetTooltip("Push To Talk - Service Stopped");
                     }
                     break;
                 case DictationState.Recording:
-                    animatedIcon.Hide();
-                    dbusTrayIcon.SetIcon("push-to-talk-recording");
-                    dbusTrayIcon.SetTooltip("Push To Talk - Recording...");
+                    trayService.HideAnimatedIcon();
+                    trayService.SetIcon("push-to-talk-recording");
+                    trayService.SetTooltip("Push To Talk - Recording...");
                     break;
                 case DictationState.Transcribing:
                     // Change icon back to white immediately when recording stops (issue #28)
-                    dbusTrayIcon.SetIcon("push-to-talk");
-                    dbusTrayIcon.SetTooltip("Push To Talk - Transcribing...");
+                    trayService.SetIcon("push-to-talk");
+                    trayService.SetTooltip("Push To Talk - Transcribing...");
                     // Show animated icon NEXT TO main icon (main stays visible)
-                    await animatedIcon.ShowAsync();
+                    await trayService.ShowAnimatedIconAsync();
                     break;
             }
 
@@ -278,13 +274,13 @@ try
         };
 
         // Handle click on tray icon
-        dbusTrayIcon.OnClicked += () =>
+        trayService.OnClicked += () =>
         {
             logger.LogInformation("Tray icon clicked");
         };
 
         // Handle Quit menu item
-        dbusTrayIcon.OnQuitRequested += () =>
+        trayService.OnQuitRequested += () =>
         {
             logger.LogInformation("Quit requested from tray menu");
             Console.WriteLine("\nQuit requested - shutting down...");
@@ -292,26 +288,26 @@ try
         };
 
         // Handle About menu item
-        dbusTrayIcon.OnAboutRequested += () =>
+        trayService.OnAboutRequested += () =>
         {
             logger.LogInformation("About dialog requested");
             AboutDialog.Show(version);
         };
 
         // Handle SpeechToText service stop request
-        dbusTrayIcon.OnStopSpeechToTextRequested += async () =>
+        trayService.OnStopSpeechToTextRequested += async () =>
         {
             logger.LogInformation("Stopping SpeechToText service...");
             var stopped = await sttServiceManager.StopAsync();
             if (stopped)
             {
                 logger.LogInformation("SpeechToText service stopped successfully");
-                dbusTrayIcon.UpdateSpeechToTextStatus(false, sttServiceManager.GetVersion());
+                trayService.UpdateSpeechToTextStatus(false, sttServiceManager.GetVersion());
             }
         };
 
         // Handle SpeechToText service start request
-        dbusTrayIcon.OnStartSpeechToTextRequested += async () =>
+        trayService.OnStartSpeechToTextRequested += async () =>
         {
             logger.LogInformation("Starting SpeechToText service...");
             var started = await sttServiceManager.StartAsync();
@@ -321,7 +317,7 @@ try
                 // Wait a moment for service to fully start
                 await Task.Delay(1000);
                 var isRunning = await sttServiceManager.IsRunningAsync();
-                dbusTrayIcon.UpdateSpeechToTextStatus(isRunning, sttServiceManager.GetVersion());
+                trayService.UpdateSpeechToTextStatus(isRunning, sttServiceManager.GetVersion());
             }
             else
             {
@@ -352,12 +348,12 @@ try
 
                 logger.LogInformation("SpeechToText service status: {Status}, version: {Version}",
                     isRunning ? "Running" : "Stopped", version);
-                dbusTrayIcon.UpdateSpeechToTextStatus(isRunning, version);
+                trayService.UpdateSpeechToTextStatus(isRunning, version);
             }
             catch (Exception ex)
             {
                 logger.LogError(ex, "Failed to check/start SpeechToText service");
-                dbusTrayIcon.UpdateSpeechToTextStatus(false, "Unknown");
+                trayService.UpdateSpeechToTextStatus(false, "Unknown");
             }
         }).FireAndForget(logger, "SttServiceCheck");
     }
@@ -444,8 +440,7 @@ finally
     cts.Cancel();
     await webApp.DisposeAsync();
     dictationService.Dispose();
-    animatedIcon.Dispose();
-    dbusTrayIcon.Dispose();
+    trayService.Dispose();
 }
 
 Console.WriteLine("PushToTalk stopped");

@@ -2,9 +2,11 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Olbrasoft.PushToTalk.App.Services;
+using Olbrasoft.PushToTalk.App.Tray;
 using Olbrasoft.PushToTalk.Audio;
 using Olbrasoft.PushToTalk.Linux.Speech;
 using Olbrasoft.PushToTalk.TextInput;
+using Olbrasoft.SystemTray.Linux;
 
 namespace Olbrasoft.PushToTalk.App;
 
@@ -153,26 +155,28 @@ public static class ServiceCollectionExtensions
         // SpeechToText service manager for status checking and control
         services.AddSingleton<SpeechToTextServiceManager>();
 
-        // Main tray icon (D-Bus StatusNotifierItem)
+        // Icon renderer for SVG rendering
         services.AddSingleton(sp =>
         {
-            var logger = sp.GetRequiredService<ILogger<DBusTrayIcon>>();
-            return new DBusTrayIcon(logger, iconsPath, options.IconSize);
+            var logger = sp.GetRequiredService<ILogger<IconRenderer>>();
+            return new IconRenderer(logger);
         });
 
-        // Animated tray icon (separate instance for transcription animation)
+        // Tray icon manager for managing multiple icons (main + animated)
         services.AddSingleton(sp =>
         {
-            var logger = sp.GetRequiredService<ILogger<DBusAnimatedIcon>>();
-            var frameNames = new[]
-            {
-                "document-white-frame1",
-                "document-white-frame2",
-                "document-white-frame3",
-                "document-white-frame4",
-                "document-white-frame5"
-            };
-            return new DBusAnimatedIcon(logger, iconsPath, frameNames, options.IconSize);
+            var logger = sp.GetRequiredService<ILogger<TrayIconManager>>();
+            var loggerFactory = sp.GetRequiredService<ILoggerFactory>();
+            var iconRenderer = sp.GetRequiredService<IconRenderer>();
+            return new TrayIconManager(logger, loggerFactory, iconRenderer);
+        });
+
+        // PushToTalk tray service (wrapper for main + animated icons)
+        services.AddSingleton(sp =>
+        {
+            var logger = sp.GetRequiredService<ILogger<PushToTalkTrayService>>();
+            var manager = sp.GetRequiredService<TrayIconManager>();
+            return new PushToTalkTrayService(logger, manager, iconsPath);
         });
 
         return services;
