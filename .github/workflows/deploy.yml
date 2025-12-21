@@ -16,7 +16,7 @@ jobs:
     - name: Deploy PushToTalk
       env:
         DOTNET_ROOT: /home/jirka/.dotnet
-        PATH: /home/jirka/.dotnet:/home/jirka/.dotnet/tools:$PATH
+        PATH: /home/jirka/.dotnet:/home/jirka/.dotnet/tools:/usr/local/bin:/usr/bin:/bin
       run: |
         echo "🚀 Deploying PushToTalk to /opt/olbrasoft/push-to-talk..."
         cd /home/jirka/Olbrasoft/PushToTalk
