@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Olbrasoft.NotificationAudio.Providers.Linux;
 using Olbrasoft.PushToTalk.App.Configuration;
 using Olbrasoft.PushToTalk.App.Services;
 using Olbrasoft.PushToTalk.App.Tray;
@@ -24,6 +25,9 @@ public static class ServiceCollectionExtensions
         DictationOptions options,
         IConfiguration configuration)
     {
+        // NotificationAudio for playing transcription sound
+        services.AddNotificationAudio();
+
         // VirtualAssistant client for TTS coordination
         services.AddSingleton<HttpClient>();
         services.AddSingleton<IVirtualAssistantClient>(sp =>
@@ -77,16 +81,8 @@ public static class ServiceCollectionExtensions
             return factory.Create();
         });
 
-        // Optional: Typing sound player
-        var soundPath = options.GetFullTranscriptionSoundPath();
-        if (!string.IsNullOrWhiteSpace(soundPath))
-        {
-            services.AddSingleton(sp =>
-            {
-                var logger = sp.GetRequiredService<ILogger<TypingSoundPlayer>>();
-                return new TypingSoundPlayer(logger, soundPath);
-            });
-        }
+        // NOTE: TypingSoundPlayer removed - now using INotificationPlayer from NotificationAudio
+        // TranscriptionSoundPath is still in configuration but will be used differently
 
         // Optional: Text filter
         var filtersPath = options.GetFullTextFiltersPath();
@@ -104,8 +100,9 @@ public static class ServiceCollectionExtensions
         {
             var logger = sp.GetRequiredService<ILogger<TranscriptionCoordinator>>();
             var transcriber = sp.GetRequiredService<ISpeechTranscriber>();
-            var soundPlayer = sp.GetService<TypingSoundPlayer>();
-            return new TranscriptionCoordinator(logger, transcriber, soundPlayer);
+            var notificationPlayer = sp.GetRequiredService<Olbrasoft.NotificationAudio.Abstractions.INotificationPlayer>();
+            var soundPath = options.GetFullTranscriptionSoundPath();
+            return new TranscriptionCoordinator(logger, transcriber, notificationPlayer, soundPath);
         });
 
         // Text output handler (combines text filtering + typing)
@@ -127,7 +124,7 @@ public static class ServiceCollectionExtensions
             var transcriptionCoordinator = sp.GetRequiredService<ITranscriptionCoordinator>();
             var textOutputHandler = sp.GetRequiredService<ITextOutputHandler>();
             var vaClient = sp.GetService<IVirtualAssistantClient>();
-            var soundPlayer = sp.GetService<TypingSoundPlayer>();
+            var notificationPlayer = sp.GetRequiredService<Olbrasoft.NotificationAudio.Abstractions.INotificationPlayer>();
             var recordingStartSoundPath = options.GetFullRecordingStartSoundPath();
 
             return new DictationService(
@@ -138,7 +135,7 @@ public static class ServiceCollectionExtensions
                 transcriptionCoordinator,
                 textOutputHandler,
                 vaClient,
-                soundPlayer,
+                notificationPlayer,
                 recordingStartSoundPath,
                 options.GetTriggerKeyCode(),
                 options.GetCancelKeyCode());
