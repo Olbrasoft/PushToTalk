@@ -22,6 +22,7 @@
   <ItemGroup>
     <ProjectReference Include="..\PushToTalk.Core\PushToTalk.Core.csproj" />
     <ProjectReference Include="..\PushToTalk.Linux\PushToTalk.Linux.csproj" />
+    <ProjectReference Include="..\..\..\NotificationAudio\src\NotificationAudio.Providers.Linux\NotificationAudio.Providers.Linux.csproj" />
   </ItemGroup>
 
   <!-- ASP.NET Core for embedded web server and SignalR -->
