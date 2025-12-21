@@ -14,6 +14,7 @@ internal class DBusMenuHandler : ComCanonicalDbusmenuHandler, ITrayMenuHandler
     private Connection? _connection;
     private readonly ILogger _logger;
     private uint _revision = 1;
+    private PathHandler? _menuPathHandler;
 
     // Menu item IDs
     private const int RootId = 0;
@@ -57,15 +58,44 @@ internal class DBusMenuHandler : ComCanonicalDbusmenuHandler, ITrayMenuHandler
         IconThemePath = Array.Empty<string>();
     }
 
-    public override Connection Connection => _connection ?? throw new InvalidOperationException("Connection not set. TrayIcon will set this during initialization.");
+    public override Connection Connection => _connection ?? throw new InvalidOperationException("Connection not set. Call RegisterWithDbus first.");
 
     /// <summary>
-    /// Initializes the menu handler with a D-Bus connection.
-    /// Called by TrayIcon during initialization.
+    /// Registers the menu handler with D-Bus connection.
+    /// Creates a PathHandler in this assembly and registers itself.
     /// </summary>
-    public void InitializeConnection(Connection connection)
+    public void RegisterWithDbus(Connection connection)
     {
-        _connection = connection;
+        _connection = connection ?? throw new ArgumentNullException(nameof(connection));
+
+        // Create PathHandler in THIS assembly (PushToTalk.App)
+        // This avoids cross-assembly type incompatibility with PathHandler in SystemTray.Linux
+        _menuPathHandler = new PathHandler("/MenuBar");
+
+        // Set the PathHandler property (types match because both are from PushToTalk.App)
+        PathHandler = _menuPathHandler;
+
+        // Add ourselves to the handler
+        _menuPathHandler.Add(this);
+
+        // Register with D-Bus connection
+        connection.AddMethodHandler(_menuPathHandler);
+
+        _logger.LogDebug("Menu handler registered at /MenuBar in PushToTalk.App assembly");
+    }
+
+    /// <summary>
+    /// Unregisters the menu handler from D-Bus connection.
+    /// </summary>
+    public void UnregisterFromDbus(Connection connection)
+    {
+        if (_menuPathHandler is not null)
+        {
+            _menuPathHandler.Remove(this);
+            connection.RemoveMethodHandler(_menuPathHandler.Path);
+            _menuPathHandler = null;
+            _logger.LogDebug("Menu handler unregistered from /MenuBar");
+        }
     }
 
     /// <summary>
