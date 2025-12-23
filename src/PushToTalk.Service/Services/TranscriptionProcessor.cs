@@ -1,5 +1,7 @@
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Olbrasoft.PushToTalk.Core.Interfaces;
+using PushToTalk.Data;
 
 namespace Olbrasoft.PushToTalk.Service.Services;
 
@@ -12,15 +14,18 @@ public class TranscriptionProcessor : ITranscriptionProcessor
     private readonly ILogger<TranscriptionProcessor> _logger;
     private readonly ISpeechTranscriber _speechTranscriber;
     private readonly IHallucinationFilter _hallucinationFilter;
+    private readonly IServiceScopeFactory _serviceScopeFactory;
 
     public TranscriptionProcessor(
         ILogger<TranscriptionProcessor> logger,
         ISpeechTranscriber speechTranscriber,
-        IHallucinationFilter hallucinationFilter)
+        IHallucinationFilter hallucinationFilter,
+        IServiceScopeFactory serviceScopeFactory)
     {
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         _speechTranscriber = speechTranscriber ?? throw new ArgumentNullException(nameof(speechTranscriber));
         _hallucinationFilter = hallucinationFilter ?? throw new ArgumentNullException(nameof(hallucinationFilter));
+        _serviceScopeFactory = serviceScopeFactory ?? throw new ArgumentNullException(nameof(serviceScopeFactory));
     }
 
     /// <inheritdoc />
@@ -56,6 +61,30 @@ public class TranscriptionProcessor : ITranscriptionProcessor
 
         _logger.LogInformation("Transcription successful: {Text} (confidence: {Confidence:F3})",
             cleanedText, transcription.Confidence);
+
+        // Save transcription to database (background task, don't block)
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                using var scope = _serviceScopeFactory.CreateScope();
+                var repository = scope.ServiceProvider.GetRequiredService<ITranscriptionRepository>();
+
+                await repository.SaveAsync(
+                    text: cleanedText,
+                    sourceApp: null, // TODO: Get active window name if needed
+                    durationMs: null, // TODO: Calculate audio duration if needed
+                    modelName: null, // TODO: Get model name from configuration
+                    language: "cs", // TODO: Get from configuration
+                    ct: CancellationToken.None); // Use None since this is background task
+
+                _logger.LogDebug("Transcription saved to database");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to save transcription to database");
+            }
+        }, cancellationToken);
 
         return new TranscriptionProcessorResult(
             Success: true,

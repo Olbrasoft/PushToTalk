@@ -1,3 +1,4 @@
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Olbrasoft.PushToTalk.Audio;
@@ -5,6 +6,8 @@ using Olbrasoft.PushToTalk.Core.Interfaces;
 using Olbrasoft.PushToTalk.Linux.Speech;
 using Olbrasoft.PushToTalk.Service.Services;
 using Olbrasoft.PushToTalk.TextInput;
+using PushToTalk.Data;
+using PushToTalk.Data.EntityFrameworkCore;
 
 // Disambiguate types that exist in multiple namespaces
 using PttManualMuteService = Olbrasoft.PushToTalk.Service.Services.ManualMuteService;
@@ -133,6 +136,23 @@ public static class ServiceCollectionExtensions
         // Register interfaces pointing to the same DictationWorker instance
         services.AddSingleton<IRecordingStateProvider>(sp => sp.GetRequiredService<DictationWorker>());
         services.AddSingleton<IRecordingController>(sp => sp.GetRequiredService<DictationWorker>());
+
+        // Database - PostgreSQL with Entity Framework Core
+        services.AddDbContext<PushToTalkDbContext>(options =>
+        {
+            var connectionString = configuration.GetConnectionString("DefaultConnection");
+            if (string.IsNullOrWhiteSpace(connectionString))
+            {
+                throw new InvalidOperationException(
+                    "Database connection string 'DefaultConnection' is not configured. " +
+                    "Use 'dotnet user-secrets set \"ConnectionStrings:DefaultConnection\" \"<connection-string>\"' " +
+                    "for development or set environment variable for production.");
+            }
+            options.UseNpgsql(connectionString);
+        });
+
+        // Transcription repository for saving Whisper transcriptions to database
+        services.AddScoped<ITranscriptionRepository, TranscriptionRepository>();
 
         return services;
     }
