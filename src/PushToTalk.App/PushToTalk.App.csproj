@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
@@ -19,11 +19,14 @@
     <Description>Voice transcription using Whisper AI</Description>
     <Authors>Olbrasoft</Authors>
     <DebMaintainer>Olbrasoft</DebMaintainer>
+    <UserSecretsId>9bcc2d09-89ec-44df-8400-9072e5207d38</UserSecretsId>
   </PropertyGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\PushToTalk.Core\PushToTalk.Core.csproj" />
     <ProjectReference Include="..\PushToTalk.Linux\PushToTalk.Linux.csproj" />
+    <ProjectReference Include="..\PushToTalk.Data\PushToTalk.Data.csproj" />
+    <ProjectReference Include="..\PushToTalk.Data.EntityFrameworkCore\PushToTalk.Data.EntityFrameworkCore.csproj" />
   </ItemGroup>
 
   <ItemGroup>

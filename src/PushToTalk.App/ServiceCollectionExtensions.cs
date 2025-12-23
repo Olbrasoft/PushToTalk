@@ -1,3 +1,4 @@
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -9,6 +10,8 @@ using Olbrasoft.PushToTalk.Audio;
 using Olbrasoft.PushToTalk.Linux.Speech;
 using Olbrasoft.PushToTalk.TextInput;
 using Olbrasoft.SystemTray.Linux;
+using PushToTalk.Data;
+using PushToTalk.Data.EntityFrameworkCore;
 
 namespace Olbrasoft.PushToTalk.App;
 
@@ -104,8 +107,9 @@ public static class ServiceCollectionExtensions
             var logger = sp.GetRequiredService<ILogger<TranscriptionCoordinator>>();
             var transcriber = sp.GetRequiredService<ISpeechTranscriber>();
             var notificationPlayer = sp.GetRequiredService<Olbrasoft.NotificationAudio.Abstractions.INotificationPlayer>();
+            var serviceScopeFactory = sp.GetRequiredService<IServiceScopeFactory>();
             var soundPath = options.GetFullTranscriptionSoundPath();
-            return new TranscriptionCoordinator(logger, transcriber, notificationPlayer, soundPath);
+            return new TranscriptionCoordinator(logger, transcriber, notificationPlayer, serviceScopeFactory, soundPath);
         });
 
         // Text output handler (combines text filtering + typing)
@@ -143,6 +147,21 @@ public static class ServiceCollectionExtensions
                 options.GetTriggerKeyCode(),
                 options.GetCancelKeyCode());
         });
+
+        // Database - PostgreSQL with Entity Framework Core
+        services.AddDbContext<PushToTalkDbContext>(options =>
+        {
+            var connectionString = configuration.GetConnectionString("DefaultConnection");
+            if (!string.IsNullOrWhiteSpace(connectionString))
+            {
+                options.UseNpgsql(connectionString);
+            }
+            // If connection string is not configured, DbContext won't be usable
+            // but app will still work (just won't save transcriptions)
+        });
+
+        // Transcription repository for saving Whisper transcriptions to database
+        services.AddScoped<ITranscriptionRepository, TranscriptionRepository>();
 
         return services;
     }

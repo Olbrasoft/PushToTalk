@@ -1,7 +1,9 @@
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Olbrasoft.NotificationAudio.Abstractions;
 using Olbrasoft.PushToTalk.Core.Interfaces;
 using Olbrasoft.PushToTalk.Core.Models;
+using PushToTalk.Data;
 
 namespace Olbrasoft.PushToTalk.App.Services;
 
@@ -13,6 +15,7 @@ public class TranscriptionCoordinator : ITranscriptionCoordinator
     private readonly ILogger<TranscriptionCoordinator> _logger;
     private readonly ISpeechTranscriber _speechTranscriber;
     private readonly INotificationPlayer _notificationPlayer;
+    private readonly IServiceScopeFactory _serviceScopeFactory;
     private readonly string? _soundPath;
     private bool _disposed;
     private Task? _loopTask;
@@ -22,11 +25,13 @@ public class TranscriptionCoordinator : ITranscriptionCoordinator
         ILogger<TranscriptionCoordinator> logger,
         ISpeechTranscriber speechTranscriber,
         INotificationPlayer notificationPlayer,
+        IServiceScopeFactory serviceScopeFactory,
         string? soundPath = null)
     {
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         _speechTranscriber = speechTranscriber ?? throw new ArgumentNullException(nameof(speechTranscriber));
         _notificationPlayer = notificationPlayer ?? throw new ArgumentNullException(nameof(notificationPlayer));
+        _serviceScopeFactory = serviceScopeFactory ?? throw new ArgumentNullException(nameof(serviceScopeFactory));
         _soundPath = soundPath;
     }
 
@@ -47,6 +52,33 @@ public class TranscriptionCoordinator : ITranscriptionCoordinator
 
             _logger.LogInformation("Starting transcription of {ByteCount} bytes...", audioData.Length);
             var result = await _speechTranscriber.TranscribeAsync(audioData, cancellationToken);
+
+            // Save successful transcription to database (background task, don't block)
+            if (result.Success && !string.IsNullOrWhiteSpace(result.Text))
+            {
+                _ = Task.Run(async () =>
+                {
+                    try
+                    {
+                        using var scope = _serviceScopeFactory.CreateScope();
+                        var repository = scope.ServiceProvider.GetRequiredService<ITranscriptionRepository>();
+
+                        await repository.SaveAsync(
+                            text: result.Text,
+                            sourceApp: null, // TODO: Get active window name if needed
+                            durationMs: null, // TODO: Calculate audio duration if needed
+                            modelName: null, // TODO: Get model name from configuration
+                            language: "cs", // TODO: Get from configuration
+                            ct: CancellationToken.None); // Use None since this is background task
+
+                        _logger.LogDebug("Transcription saved to database");
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "Failed to save transcription to database");
+                    }
+                }, cancellationToken);
+            }
 
             return result;
         }
