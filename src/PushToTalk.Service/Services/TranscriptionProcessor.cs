@@ -72,10 +72,7 @@ public class TranscriptionProcessor : ITranscriptionProcessor
 
                 await repository.SaveAsync(
                     text: cleanedText,
-                    sourceApp: null, // TODO: Get active window name if needed
-                    durationMs: null, // TODO: Calculate audio duration if needed
-                    modelName: null, // TODO: Get model name from configuration
-                    language: "cs", // TODO: Get from configuration
+                    durationMs: null, // Duration not available in Service
                     ct: CancellationToken.None); // Use None since this is background task
 
                 _logger.LogDebug("Transcription saved to database");

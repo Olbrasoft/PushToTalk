@@ -18,20 +18,8 @@ public class WhisperTranscriptionConfiguration : IEntityTypeConfiguration<Whispe
             .HasColumnName("transcribed_text")
             .IsRequired();
 
-        builder.Property(t => t.SourceApplication)
-            .HasColumnName("source_application")
-            .HasMaxLength(255);
-
         builder.Property(t => t.AudioDurationMs)
             .HasColumnName("audio_duration_ms");
-
-        builder.Property(t => t.ModelName)
-            .HasColumnName("model_name")
-            .HasMaxLength(100);
-
-        builder.Property(t => t.Language)
-            .HasColumnName("language")
-            .HasMaxLength(10);
 
         builder.Property(t => t.CreatedAt)
             .HasColumnName("created_at")

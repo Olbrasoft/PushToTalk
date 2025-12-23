@@ -11,18 +11,12 @@ public interface ITranscriptionRepository
     /// Saves a new Whisper transcription record.
     /// </summary>
     /// <param name="text">The transcribed text from Whisper.</param>
-    /// <param name="sourceApp">The application that had focus during dictation (optional).</param>
     /// <param name="durationMs">The audio recording duration in milliseconds (optional).</param>
-    /// <param name="modelName">The Whisper model used (optional).</param>
-    /// <param name="language">The language code (optional).</param>
     /// <param name="ct">Cancellation token.</param>
     /// <returns>The saved transcription entity.</returns>
     Task<WhisperTranscription> SaveAsync(
         string text,
-        string? sourceApp = null,
         int? durationMs = null,
-        string? modelName = null,
-        string? language = null,
         CancellationToken ct = default);
 
     /// <summary>

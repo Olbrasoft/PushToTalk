@@ -20,19 +20,13 @@ public class TranscriptionRepository : ITranscriptionRepository
     /// <inheritdoc />
     public async Task<WhisperTranscription> SaveAsync(
         string text,
-        string? sourceApp = null,
         int? durationMs = null,
-        string? modelName = null,
-        string? language = null,
         CancellationToken ct = default)
     {
         var transcription = new WhisperTranscription
         {
             TranscribedText = text,
-            SourceApplication = sourceApp,
             AudioDurationMs = durationMs,
-            ModelName = modelName,
-            Language = language,
             CreatedAt = DateTime.UtcNow
         };
 
@@ -40,12 +34,10 @@ public class TranscriptionRepository : ITranscriptionRepository
         await _dbContext.SaveChangesAsync(ct);
 
         _logger.LogDebug(
-            "Saved transcription {Id}: '{Text}' (source: {SourceApp}, duration: {DurationMs}ms, model: {Model})",
+            "Saved transcription {Id}: '{Text}' (duration: {DurationMs}ms)",
             transcription.Id,
             text.Length > 50 ? text[..50] + "..." : text,
-            sourceApp,
-            durationMs,
-            modelName);
+            durationMs);
 
         return transcription;
     }

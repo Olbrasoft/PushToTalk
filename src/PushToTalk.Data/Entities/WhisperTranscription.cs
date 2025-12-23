@@ -13,24 +13,9 @@ public class WhisperTranscription : BaseEnity
     public required string TranscribedText { get; set; }
 
     /// <summary>
-    /// Gets or sets the application that had focus during dictation (e.g., "code", "firefox").
-    /// </summary>
-    public string? SourceApplication { get; set; }
-
-    /// <summary>
     /// Gets or sets the audio recording duration in milliseconds.
     /// </summary>
     public int? AudioDurationMs { get; set; }
-
-    /// <summary>
-    /// Gets or sets the Whisper model used (e.g., "ggml-large-v3-turbo").
-    /// </summary>
-    public string? ModelName { get; set; }
-
-    /// <summary>
-    /// Gets or sets the language code (e.g., "cs", "en").
-    /// </summary>
-    public string? Language { get; set; }
 
     /// <summary>
     /// Gets or sets when the transcription was created (UTC).
