@@ -56,6 +56,10 @@ public class TranscriptionCoordinator : ITranscriptionCoordinator
             // Save successful transcription to database (background task, don't block)
             if (result.Success && !string.IsNullOrWhiteSpace(result.Text))
             {
+                // Calculate audio duration from byte size
+                // Audio format: 16000 Hz, 1 channel (mono), 16-bit (2 bytes per sample)
+                var durationMs = (int)((audioData.Length / 2.0) / 16000.0 * 1000.0);
+
                 _ = Task.Run(async () =>
                 {
                     try
@@ -65,10 +69,10 @@ public class TranscriptionCoordinator : ITranscriptionCoordinator
 
                         await repository.SaveAsync(
                             text: result.Text,
-                            sourceApp: null, // TODO: Get active window name if needed
-                            durationMs: null, // TODO: Calculate audio duration if needed
-                            modelName: null, // TODO: Get model name from configuration
-                            language: "cs", // TODO: Get from configuration
+                            sourceApp: GetActiveWindowName(),
+                            durationMs: durationMs,
+                            modelName: GetModelName(),
+                            language: _speechTranscriber.Language,
                             ct: CancellationToken.None); // Use None since this is background task
 
                         _logger.LogDebug("Transcription saved to database");
@@ -157,6 +161,67 @@ public class TranscriptionCoordinator : ITranscriptionCoordinator
                 }
             }
         }
+    }
+
+    private string? GetActiveWindowName()
+    {
+        try
+        {
+            // Try dotool first (modern, works with Wayland and X11)
+            var process = new System.Diagnostics.Process
+            {
+                StartInfo = new System.Diagnostics.ProcessStartInfo
+                {
+                    FileName = "dotool",
+                    Arguments = "getwindow",
+                    RedirectStandardOutput = true,
+                    UseShellExecute = false,
+                    CreateNoWindow = true
+                }
+            };
+
+            process.Start();
+            var output = process.StandardOutput.ReadToEnd().Trim();
+            process.WaitForExit();
+
+            if (process.ExitCode == 0 && !string.IsNullOrWhiteSpace(output))
+                return output;
+
+            // Fallback to xdotool (X11 only)
+            process = new System.Diagnostics.Process
+            {
+                StartInfo = new System.Diagnostics.ProcessStartInfo
+                {
+                    FileName = "xdotool",
+                    Arguments = "getactivewindow getwindowname",
+                    RedirectStandardOutput = true,
+                    UseShellExecute = false,
+                    CreateNoWindow = true
+                }
+            };
+
+            process.Start();
+            output = process.StandardOutput.ReadToEnd().Trim();
+            process.WaitForExit();
+
+            return process.ExitCode == 0 ? output : null;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogDebug(ex, "Failed to get active window name");
+            return null;
+        }
+    }
+
+    private string? GetModelName()
+    {
+        // Try to get model name from environment variable
+        var modelName = Environment.GetEnvironmentVariable("WHISPER_MODEL_NAME");
+        if (!string.IsNullOrWhiteSpace(modelName))
+            return modelName;
+
+        // Default to service name since we're using gRPC microservice
+        return "SpeechToText-gRPC";
     }
 
     public void Dispose()
