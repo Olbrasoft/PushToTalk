@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using PushToTalk.Data.EntityFrameworkCore;
@@ -11,9 +12,11 @@ using PushToTalk.Data.EntityFrameworkCore;
 namespace Olbrasoft.PushToTalk.Data.EntityFrameworkCore.Migrations
 {
     [DbContext(typeof(PushToTalkDbContext))]
-    partial class PushToTalkDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251226185628_AddTranscriptionCorrections")]
+    partial class AddTranscriptionCorrections
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
