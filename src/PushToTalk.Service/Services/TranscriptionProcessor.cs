@@ -62,24 +62,38 @@ public class TranscriptionProcessor : ITranscriptionProcessor
         _logger.LogInformation("Transcription successful: {Text} (confidence: {Confidence:F3})",
             cleanedText, transcription.Confidence);
 
-        // Save transcription to database (background task, don't block)
+        // Save transcription to database and run LLM correction (background task, don't block)
         _ = Task.Run(async () =>
         {
             try
             {
                 using var scope = _serviceScopeFactory.CreateScope();
                 var repository = scope.ServiceProvider.GetRequiredService<ITranscriptionRepository>();
+                var llmCorrectionService = scope.ServiceProvider.GetRequiredService<ILlmCorrectionService>();
 
-                await repository.SaveAsync(
+                // Save Whisper transcription first
+                var transcription = await repository.SaveAsync(
                     text: cleanedText,
                     durationMs: null, // Duration not available in Service
                     ct: CancellationToken.None); // Use None since this is background task
 
-                _logger.LogDebug("Transcription saved to database");
+                _logger.LogDebug("Transcription saved to database with ID: {TranscriptionId}", transcription.Id);
+
+                // Run LLM correction (async, non-blocking for dictation workflow)
+                var correctedText = await llmCorrectionService.CorrectTranscriptionAsync(
+                    transcription.Id,
+                    cleanedText,
+                    CancellationToken.None);
+
+                if (correctedText != cleanedText)
+                {
+                    _logger.LogInformation("LLM corrected text from '{Original}' to '{Corrected}'",
+                        cleanedText, correctedText);
+                }
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Failed to save transcription to database");
+                _logger.LogError(ex, "Failed to save transcription or run LLM correction");
             }
         }, cancellationToken);
 
