@@ -1,4 +1,5 @@
 using System.Text.Json;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using PushToTalk.Data;
 using PushToTalk.Data.Entities;
@@ -36,7 +37,7 @@ public class TextFilter
 {
     private readonly ILogger<TextFilter> _logger;
     private readonly string? _configPath;
-    private readonly ITranscriptionCorrectionRepository? _correctionRepository;
+    private readonly IServiceScopeFactory? _serviceScopeFactory;
 
     // File-based filters
     private List<string> _removePatterns = new();
@@ -52,11 +53,11 @@ public class TextFilter
 
     public TextFilter(
         ILogger<TextFilter> logger,
-        ITranscriptionCorrectionRepository? correctionRepository = null,
+        IServiceScopeFactory? serviceScopeFactory = null,
         string? configPath = null)
     {
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-        _correctionRepository = correctionRepository;
+        _serviceScopeFactory = serviceScopeFactory;
         _configPath = configPath;
 
         if (!string.IsNullOrWhiteSpace(_configPath))
@@ -68,7 +69,7 @@ public class TextFilter
             _logger.LogInformation("File-based text filtering disabled (no config path)");
         }
 
-        if (_correctionRepository != null)
+        if (_serviceScopeFactory != null)
         {
             _logger.LogInformation("Database-driven corrections enabled");
         }
@@ -79,7 +80,7 @@ public class TextFilter
     /// </summary>
     public bool IsEnabled => _removePatterns.Count > 0
         || _fileReplacements.Count > 0
-        || _correctionRepository != null;
+        || _serviceScopeFactory != null;
 
     /// <summary>
     /// Gets the number of loaded remove patterns (file-based only).
@@ -136,7 +137,7 @@ public class TextFilter
     /// </summary>
     private string ApplyDatabaseCorrections(string text)
     {
-        if (_correctionRepository == null || _cachedCorrections.Count == 0)
+        if (_cachedCorrections.Count == 0)
             return text;
 
         var result = text;
@@ -240,7 +241,7 @@ public class TextFilter
     /// </summary>
     private void RefreshCorrectionsCache()
     {
-        if (_correctionRepository == null)
+        if (_serviceScopeFactory == null)
             return;
 
         if (DateTime.UtcNow < _cacheExpiry)
@@ -254,8 +255,19 @@ public class TextFilter
 
             try
             {
+                // Create a new scope to get scoped repository
+                using var scope = _serviceScopeFactory.CreateScope();
+                var repository = scope.ServiceProvider.GetService<ITranscriptionCorrectionRepository>();
+
+                if (repository == null)
+                {
+                    _logger.LogWarning("ITranscriptionCorrectionRepository not available");
+                    _cacheExpiry = DateTime.UtcNow.AddSeconds(30);
+                    return;
+                }
+
                 // Synchronous call is acceptable for cache refresh
-                _cachedCorrections = _correctionRepository
+                _cachedCorrections = repository
                     .GetActiveCorrectionsAsync()
                     .GetAwaiter()
                     .GetResult();
@@ -282,12 +294,19 @@ public class TextFilter
     /// </summary>
     private async Task TrackCorrectionUsageAsync(int correctionId)
     {
-        if (_correctionRepository == null)
+        if (_serviceScopeFactory == null)
             return;
 
         try
         {
-            await _correctionRepository.TrackUsageAsync(correctionId);
+            // Create a new scope to get scoped repository
+            using var scope = _serviceScopeFactory.CreateScope();
+            var repository = scope.ServiceProvider.GetService<ITranscriptionCorrectionRepository>();
+
+            if (repository != null)
+            {
+                await repository.TrackUsageAsync(correctionId);
+            }
         }
         catch (Exception ex)
         {

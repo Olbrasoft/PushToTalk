@@ -95,22 +95,9 @@ public static class ServiceCollectionExtensions
         {
             var logger = sp.GetRequiredService<ILogger<TextFilter>>();
             var filtersPath = options.GetFullTextFiltersPath();
+            var serviceScopeFactory = sp.GetRequiredService<IServiceScopeFactory>();
 
-            // Get repository from a scope (TextFilter is singleton, repository is scoped)
-            // We'll create a scope to resolve the repository for initial cache population
-            ITranscriptionCorrectionRepository? repository = null;
-            try
-            {
-                using var scope = sp.CreateScope();
-                repository = scope.ServiceProvider.GetService<ITranscriptionCorrectionRepository>();
-            }
-            catch
-            {
-                // Database may not be available yet (first run, migrations pending)
-                logger.LogWarning("Database corrections unavailable (database not ready)");
-            }
-
-            return new TextFilter(logger, repository, filtersPath);
+            return new TextFilter(logger, serviceScopeFactory, filtersPath);
         });
 
         // Transcription coordinator (combines speech transcription + sound feedback)
