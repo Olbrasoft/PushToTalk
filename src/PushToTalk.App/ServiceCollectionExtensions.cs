@@ -90,16 +90,15 @@ public static class ServiceCollectionExtensions
         // NOTE: TypingSoundPlayer removed - now using INotificationPlayer from NotificationAudio
         // TranscriptionSoundPath is still in configuration but will be used differently
 
-        // Optional: Text filter
-        var filtersPath = options.GetFullTextFiltersPath();
-        if (!string.IsNullOrWhiteSpace(filtersPath))
+        // Text filter (supports both file-based and database-driven corrections)
+        services.AddSingleton(sp =>
         {
-            services.AddSingleton(sp =>
-            {
-                var logger = sp.GetRequiredService<ILogger<TextFilter>>();
-                return new TextFilter(logger, filtersPath);
-            });
-        }
+            var logger = sp.GetRequiredService<ILogger<TextFilter>>();
+            var filtersPath = options.GetFullTextFiltersPath();
+            var serviceScopeFactory = sp.GetRequiredService<IServiceScopeFactory>();
+
+            return new TextFilter(logger, serviceScopeFactory, filtersPath);
+        });
 
         // Transcription coordinator (combines speech transcription + sound feedback)
         services.AddSingleton<ITranscriptionCoordinator>(sp =>
@@ -162,6 +161,29 @@ public static class ServiceCollectionExtensions
 
         // Transcription repository for saving Whisper transcriptions to database
         services.AddScoped<ITranscriptionRepository, TranscriptionRepository>();
+
+        // Transcription corrections repository (for ASR post-processing)
+        services.AddScoped<ITranscriptionCorrectionRepository, TranscriptionCorrectionRepository>();
+
+        // LLM Correction Services
+        // Configure Mistral options from database (not from appsettings/secrets)
+        services.ConfigureOptions<Service.Configuration.DatabaseMistralOptionsSetup>();
+
+        // Configure ServiceEndpoints for VirtualAssistant URL
+        services.Configure<Core.Configuration.ServiceEndpoints>(
+            configuration.GetSection(Core.Configuration.ServiceEndpoints.SectionName));
+
+        // HTTP client for MistralProvider
+        services.AddHttpClient<ILlmProvider, Core.Services.MistralProvider>();
+
+        // HTTP client for NotificationClient (VirtualAssistant)
+        services.AddHttpClient<INotificationClient, Service.Services.NotificationClient>();
+
+        // LLM correction orchestration service (scoped - uses DbContext)
+        services.AddScoped<ILlmCorrectionService, Service.Services.LlmCorrectionService>();
+
+        // Email notification service (scoped - uses DbContext)
+        services.AddScoped<IEmailNotificationService, Service.Services.EmailNotificationService>();
 
         return services;
     }

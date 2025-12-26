@@ -15,7 +15,7 @@
     <PackageId>push-to-talk</PackageId>
     <!-- Version is auto-calculated in CI/CD as 1.0.${{ github.run_number }} -->
     <!-- This is fallback for local builds only -->
-    <Version>1.0.0-local</Version>
+    <Version>1.0.1</Version>
     <Description>Voice transcription using Whisper AI</Description>
     <Authors>Olbrasoft</Authors>
     <DebMaintainer>Olbrasoft</DebMaintainer>
@@ -27,6 +27,9 @@
     <ProjectReference Include="..\PushToTalk.Linux\PushToTalk.Linux.csproj" />
     <ProjectReference Include="..\PushToTalk.Data\PushToTalk.Data.csproj" />
     <ProjectReference Include="..\PushToTalk.Data.EntityFrameworkCore\PushToTalk.Data.EntityFrameworkCore.csproj" />
+    <ProjectReference Include="..\PushToTalk.Service\PushToTalk.Service.csproj">
+      <ExcludeAssets>contentFiles;none</ExcludeAssets>
+    </ProjectReference>
   </ItemGroup>
 
   <ItemGroup>

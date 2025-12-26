@@ -154,6 +154,26 @@ public static class ServiceCollectionExtensions
         // Transcription repository for saving Whisper transcriptions to database
         services.AddScoped<ITranscriptionRepository, TranscriptionRepository>();
 
+        // LLM Correction Services
+        // Configure Mistral options from database (not from appsettings/secrets)
+        services.ConfigureOptions<Configuration.DatabaseMistralOptionsSetup>();
+
+        // Configure ServiceEndpoints for VirtualAssistant URL
+        services.Configure<Core.Configuration.ServiceEndpoints>(
+            configuration.GetSection(Core.Configuration.ServiceEndpoints.SectionName));
+
+        // HTTP client for MistralProvider
+        services.AddHttpClient<ILlmProvider, Core.Services.MistralProvider>();
+
+        // HTTP client for NotificationClient (VirtualAssistant)
+        services.AddHttpClient<INotificationClient, NotificationClient>();
+
+        // LLM correction orchestration service (scoped - uses DbContext)
+        services.AddScoped<ILlmCorrectionService, LlmCorrectionService>();
+
+        // Email notification service (scoped - uses DbContext)
+        services.AddScoped<IEmailNotificationService, EmailNotificationService>();
+
         return services;
     }
 }

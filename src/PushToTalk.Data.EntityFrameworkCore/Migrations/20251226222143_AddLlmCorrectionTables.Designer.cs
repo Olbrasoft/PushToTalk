@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using PushToTalk.Data.EntityFrameworkCore;
@@ -11,9 +12,11 @@ using PushToTalk.Data.EntityFrameworkCore;
 namespace Olbrasoft.PushToTalk.Data.EntityFrameworkCore.Migrations
 {
     [DbContext(typeof(PushToTalkDbContext))]
-    partial class PushToTalkDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251226222143_AddLlmCorrectionTables")]
+    partial class AddLlmCorrectionTables
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -53,6 +56,12 @@ namespace Olbrasoft.PushToTalk.Data.EntityFrameworkCore.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("opened_at");
 
+                    b.Property<string>("Provider")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("provider");
+
                     b.Property<DateTime>("UpdatedAt")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("timestamp with time zone")
@@ -60,6 +69,11 @@ namespace Olbrasoft.PushToTalk.Data.EntityFrameworkCore.Migrations
                         .HasDefaultValueSql("NOW()");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("Provider")
+                        .IsUnique();
+
+                    b.HasIndex("Provider", "IsOpen");
 
                     b.ToTable("circuit_breaker_states", (string)null);
                 });
@@ -133,6 +147,72 @@ namespace Olbrasoft.PushToTalk.Data.EntityFrameworkCore.Migrations
                     b.ToTable("emails", (string)null);
                 });
 
+            modelBuilder.Entity("PushToTalk.Data.Entities.LlmApiKey", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at")
+                        .HasDefaultValueSql("NOW()");
+
+                    b.Property<DateTime?>("ExpiresAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("expires_at");
+
+                    b.Property<bool>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(true)
+                        .HasColumnName("is_active");
+
+                    b.Property<DateTime?>("KeyCreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("key_created_at");
+
+                    b.Property<string>("KeyHash")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("key_hash");
+
+                    b.Property<string>("Label")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("label");
+
+                    b.Property<DateTime?>("LastUsedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("last_used_at");
+
+                    b.Property<string>("Provider")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("provider");
+
+                    b.Property<int>("RateLimitHitCount")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0)
+                        .HasColumnName("rate_limit_hit_count");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Provider", "IsActive");
+
+                    b.HasIndex("Provider", "KeyHash")
+                        .IsUnique();
+
+                    b.ToTable("llm_api_keys", (string)null);
+                });
+
             modelBuilder.Entity("PushToTalk.Data.Entities.LlmCorrection", b =>
                 {
                     b.Property<int>("Id")
@@ -143,7 +223,6 @@ namespace Olbrasoft.PushToTalk.Data.EntityFrameworkCore.Migrations
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
                     b.Property<string>("CorrectedText")
-                        .IsRequired()
                         .HasColumnType("text")
                         .HasColumnName("corrected_text");
 
@@ -157,43 +236,26 @@ namespace Olbrasoft.PushToTalk.Data.EntityFrameworkCore.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("duration_ms");
 
-                    b.Property<int>("WhisperTranscriptionId")
-                        .HasColumnType("integer")
-                        .HasColumnName("whisper_transcription_id");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("CreatedAt");
-
-                    b.HasIndex("WhisperTranscriptionId");
-
-                    b.ToTable("llm_corrections", (string)null);
-                });
-
-            modelBuilder.Entity("PushToTalk.Data.Entities.LlmError", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer")
-                        .HasColumnName("id");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<DateTime>("CreatedAt")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at")
-                        .HasDefaultValueSql("NOW()");
-
-                    b.Property<int>("DurationMs")
-                        .HasColumnType("integer")
-                        .HasColumnName("duration_ms");
-
                     b.Property<string>("ErrorMessage")
-                        .IsRequired()
                         .HasColumnType("text")
                         .HasColumnName("error_message");
 
+                    b.Property<string>("ModelName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("model_name");
+
+                    b.Property<string>("Provider")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("provider");
+
+                    b.Property<bool>("Success")
+                        .HasColumnType("boolean")
+                        .HasColumnName("success");
+
                     b.Property<int>("WhisperTranscriptionId")
                         .HasColumnType("integer")
                         .HasColumnName("whisper_transcription_id");
@@ -204,80 +266,9 @@ namespace Olbrasoft.PushToTalk.Data.EntityFrameworkCore.Migrations
 
                     b.HasIndex("WhisperTranscriptionId");
 
-                    b.ToTable("llm_errors", (string)null);
-                });
+                    b.HasIndex("Provider", "Success");
 
-            modelBuilder.Entity("PushToTalk.Data.Entities.MistralConfig", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer")
-                        .HasColumnName("id");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("ApiKey")
-                        .IsRequired()
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)")
-                        .HasColumnName("api_key");
-
-                    b.Property<string>("BaseUrl")
-                        .IsRequired()
-                        .ValueGeneratedOnAdd()
-                        .HasMaxLength(200)
-                        .HasColumnType("character varying(200)")
-                        .HasDefaultValue("https://api.mistral.ai")
-                        .HasColumnName("base_url");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at")
-                        .HasDefaultValueSql("NOW()");
-
-                    b.Property<bool>("IsActive")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("boolean")
-                        .HasDefaultValue(true)
-                        .HasColumnName("is_active");
-
-                    b.Property<string>("Label")
-                        .HasMaxLength(200)
-                        .HasColumnType("character varying(200)")
-                        .HasColumnName("label");
-
-                    b.Property<int>("MaxTokens")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer")
-                        .HasDefaultValue(1000)
-                        .HasColumnName("max_tokens");
-
-                    b.Property<string>("Model")
-                        .IsRequired()
-                        .ValueGeneratedOnAdd()
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)")
-                        .HasDefaultValue("mistral-large-latest")
-                        .HasColumnName("model");
-
-                    b.Property<double>("Temperature")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("double precision")
-                        .HasDefaultValue(0.29999999999999999)
-                        .HasColumnName("temperature");
-
-                    b.Property<int>("TimeoutSeconds")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer")
-                        .HasDefaultValue(30)
-                        .HasColumnName("timeout_seconds");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("IsActive");
-
-                    b.ToTable("mistral_configs", (string)null);
+                    b.ToTable("llm_corrections", (string)null);
                 });
 
             modelBuilder.Entity("PushToTalk.Data.Entities.TranscriptionCorrection", b =>
@@ -380,17 +371,6 @@ namespace Olbrasoft.PushToTalk.Data.EntityFrameworkCore.Migrations
                 });
 
             modelBuilder.Entity("PushToTalk.Data.Entities.LlmCorrection", b =>
-                {
-                    b.HasOne("PushToTalk.Data.Entities.WhisperTranscription", "WhisperTranscription")
-                        .WithMany()
-                        .HasForeignKey("WhisperTranscriptionId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("WhisperTranscription");
-                });
-
-            modelBuilder.Entity("PushToTalk.Data.Entities.LlmError", b =>
                 {
                     b.HasOne("PushToTalk.Data.Entities.WhisperTranscription", "WhisperTranscription")
                         .WithMany()
