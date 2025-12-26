@@ -155,9 +155,8 @@ public static class ServiceCollectionExtensions
         services.AddScoped<ITranscriptionRepository, TranscriptionRepository>();
 
         // LLM Correction Services
-        // Configure Mistral options
-        services.Configure<Core.Configuration.MistralOptions>(
-            configuration.GetSection(Core.Configuration.MistralOptions.SectionName));
+        // Configure Mistral options from database (not from appsettings/secrets)
+        services.ConfigureOptions<Configuration.DatabaseMistralOptionsSetup>();
 
         // Configure ServiceEndpoints for VirtualAssistant URL
         services.Configure<Core.Configuration.ServiceEndpoints>(
