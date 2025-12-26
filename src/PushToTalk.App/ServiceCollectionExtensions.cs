@@ -165,6 +165,26 @@ public static class ServiceCollectionExtensions
         // Transcription corrections repository (for ASR post-processing)
         services.AddScoped<ITranscriptionCorrectionRepository, TranscriptionCorrectionRepository>();
 
+        // LLM Correction Services
+        // Configure Mistral options from database (not from appsettings/secrets)
+        services.ConfigureOptions<Service.Configuration.DatabaseMistralOptionsSetup>();
+
+        // Configure ServiceEndpoints for VirtualAssistant URL
+        services.Configure<Core.Configuration.ServiceEndpoints>(
+            configuration.GetSection(Core.Configuration.ServiceEndpoints.SectionName));
+
+        // HTTP client for MistralProvider
+        services.AddHttpClient<ILlmProvider, Core.Services.MistralProvider>();
+
+        // HTTP client for NotificationClient (VirtualAssistant)
+        services.AddHttpClient<INotificationClient, Service.Services.NotificationClient>();
+
+        // LLM correction orchestration service (scoped - uses DbContext)
+        services.AddScoped<ILlmCorrectionService, Service.Services.LlmCorrectionService>();
+
+        // Email notification service (scoped - uses DbContext)
+        services.AddScoped<IEmailNotificationService, Service.Services.EmailNotificationService>();
+
         return services;
     }
 

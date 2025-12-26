@@ -27,6 +27,9 @@
     <ProjectReference Include="..\PushToTalk.Linux\PushToTalk.Linux.csproj" />
     <ProjectReference Include="..\PushToTalk.Data\PushToTalk.Data.csproj" />
     <ProjectReference Include="..\PushToTalk.Data.EntityFrameworkCore\PushToTalk.Data.EntityFrameworkCore.csproj" />
+    <ProjectReference Include="..\PushToTalk.Service\PushToTalk.Service.csproj">
+      <ExcludeAssets>contentFiles;none</ExcludeAssets>
+    </ProjectReference>
   </ItemGroup>
 
   <ItemGroup>

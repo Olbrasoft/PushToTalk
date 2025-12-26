@@ -66,17 +66,31 @@ public class TranscriptionCoordinator : ITranscriptionCoordinator
                     {
                         using var scope = _serviceScopeFactory.CreateScope();
                         var repository = scope.ServiceProvider.GetRequiredService<ITranscriptionRepository>();
+                        var llmCorrectionService = scope.ServiceProvider.GetRequiredService<ILlmCorrectionService>();
 
-                        await repository.SaveAsync(
+                        // Save Whisper transcription first
+                        var transcription = await repository.SaveAsync(
                             text: result.Text,
                             durationMs: durationMs,
                             ct: CancellationToken.None); // Use None since this is background task
 
-                        _logger.LogDebug("Transcription saved to database");
+                        _logger.LogDebug("Transcription saved to database with ID: {TranscriptionId}", transcription.Id);
+
+                        // Run LLM correction (async, non-blocking for dictation workflow)
+                        var correctedText = await llmCorrectionService.CorrectTranscriptionAsync(
+                            transcription.Id,
+                            result.Text,
+                            CancellationToken.None);
+
+                        if (correctedText != result.Text)
+                        {
+                            _logger.LogInformation("LLM corrected text from '{Original}' to '{Corrected}'",
+                                result.Text, correctedText);
+                        }
                     }
                     catch (Exception ex)
                     {
-                        _logger.LogError(ex, "Failed to save transcription to database");
+                        _logger.LogError(ex, "Failed to save transcription or run LLM correction");
                     }
                 }, cancellationToken);
             }
