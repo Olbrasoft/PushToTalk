@@ -90,16 +90,28 @@ public static class ServiceCollectionExtensions
         // NOTE: TypingSoundPlayer removed - now using INotificationPlayer from NotificationAudio
         // TranscriptionSoundPath is still in configuration but will be used differently
 
-        // Optional: Text filter
-        var filtersPath = options.GetFullTextFiltersPath();
-        if (!string.IsNullOrWhiteSpace(filtersPath))
+        // Text filter (supports both file-based and database-driven corrections)
+        services.AddSingleton(sp =>
         {
-            services.AddSingleton(sp =>
+            var logger = sp.GetRequiredService<ILogger<TextFilter>>();
+            var filtersPath = options.GetFullTextFiltersPath();
+
+            // Get repository from a scope (TextFilter is singleton, repository is scoped)
+            // We'll create a scope to resolve the repository for initial cache population
+            ITranscriptionCorrectionRepository? repository = null;
+            try
             {
-                var logger = sp.GetRequiredService<ILogger<TextFilter>>();
-                return new TextFilter(logger, filtersPath);
-            });
-        }
+                using var scope = sp.CreateScope();
+                repository = scope.ServiceProvider.GetService<ITranscriptionCorrectionRepository>();
+            }
+            catch
+            {
+                // Database may not be available yet (first run, migrations pending)
+                logger.LogWarning("Database corrections unavailable (database not ready)");
+            }
+
+            return new TextFilter(logger, repository, filtersPath);
+        });
 
         // Transcription coordinator (combines speech transcription + sound feedback)
         services.AddSingleton<ITranscriptionCoordinator>(sp =>
@@ -162,6 +174,9 @@ public static class ServiceCollectionExtensions
 
         // Transcription repository for saving Whisper transcriptions to database
         services.AddScoped<ITranscriptionRepository, TranscriptionRepository>();
+
+        // Transcription corrections repository (for ASR post-processing)
+        services.AddScoped<ITranscriptionCorrectionRepository, TranscriptionCorrectionRepository>();
 
         return services;
     }

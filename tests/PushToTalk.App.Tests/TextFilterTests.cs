@@ -17,7 +17,7 @@ public class TextFilterTests
     public void Constructor_WithNullConfigPath_ShouldDisableFiltering()
     {
         // Act
-        var filter = new TextFilter(_loggerMock.Object, null);
+        var filter = new TextFilter(_loggerMock.Object, correctionRepository: null, configPath: null);
 
         // Assert
         Assert.False(filter.IsEnabled);
@@ -28,7 +28,7 @@ public class TextFilterTests
     public void Constructor_WithEmptyConfigPath_ShouldDisableFiltering()
     {
         // Act
-        var filter = new TextFilter(_loggerMock.Object, "");
+        var filter = new TextFilter(_loggerMock.Object, correctionRepository: null, configPath: "");
 
         // Assert
         Assert.False(filter.IsEnabled);
@@ -38,7 +38,7 @@ public class TextFilterTests
     public void Constructor_WithWhitespaceConfigPath_ShouldDisableFiltering()
     {
         // Act
-        var filter = new TextFilter(_loggerMock.Object, "   ");
+        var filter = new TextFilter(_loggerMock.Object, correctionRepository: null, configPath: "   ");
 
         // Assert
         Assert.False(filter.IsEnabled);
@@ -51,7 +51,7 @@ public class TextFilterTests
         var nonExistentPath = "/tmp/non_existent_filter_config_12345.json";
 
         // Act
-        var filter = new TextFilter(_loggerMock.Object, nonExistentPath);
+        var filter = new TextFilter(_loggerMock.Object, correctionRepository: null, configPath: nonExistentPath);
 
         // Assert
         Assert.False(filter.IsEnabled);
@@ -61,7 +61,7 @@ public class TextFilterTests
     public void Apply_WithNullText_ShouldReturnEmptyString()
     {
         // Arrange
-        var filter = new TextFilter(_loggerMock.Object, null);
+        var filter = new TextFilter(_loggerMock.Object, correctionRepository: null, configPath: null);
 
         // Act
         var result = filter.Apply(null);
@@ -74,7 +74,7 @@ public class TextFilterTests
     public void Apply_WithEmptyText_ShouldReturnEmptyString()
     {
         // Arrange
-        var filter = new TextFilter(_loggerMock.Object, null);
+        var filter = new TextFilter(_loggerMock.Object, correctionRepository: null, configPath: null);
 
         // Act
         var result = filter.Apply("");
@@ -87,7 +87,7 @@ public class TextFilterTests
     public void Apply_WithWhitespaceText_ShouldReturnEmptyString()
     {
         // Arrange
-        var filter = new TextFilter(_loggerMock.Object, null);
+        var filter = new TextFilter(_loggerMock.Object, correctionRepository: null, configPath: null);
 
         // Act
         var result = filter.Apply("   ");
@@ -100,7 +100,7 @@ public class TextFilterTests
     public void Apply_WithNoFilters_ShouldReturnTrimmedText()
     {
         // Arrange
-        var filter = new TextFilter(_loggerMock.Object, null);
+        var filter = new TextFilter(_loggerMock.Object, correctionRepository: null, configPath: null);
 
         // Act
         var result = filter.Apply("  Hello World  ");
@@ -113,7 +113,7 @@ public class TextFilterTests
     public void Apply_ShouldNormalizeMultipleSpaces()
     {
         // Arrange
-        var filter = new TextFilter(_loggerMock.Object, null);
+        var filter = new TextFilter(_loggerMock.Object, correctionRepository: null, configPath: null);
 
         // Act
         var result = filter.Apply("Hello    World");
@@ -126,7 +126,7 @@ public class TextFilterTests
     public void IsEnabled_WithNoPatterns_ShouldReturnFalse()
     {
         // Arrange
-        var filter = new TextFilter(_loggerMock.Object, null);
+        var filter = new TextFilter(_loggerMock.Object, correctionRepository: null, configPath: null);
 
         // Assert
         Assert.False(filter.IsEnabled);
@@ -136,7 +136,7 @@ public class TextFilterTests
     public void PatternCount_WithNoPatterns_ShouldReturnZero()
     {
         // Arrange
-        var filter = new TextFilter(_loggerMock.Object, null);
+        var filter = new TextFilter(_loggerMock.Object, correctionRepository: null, configPath: null);
 
         // Assert
         Assert.Equal(0, filter.PatternCount);
@@ -146,7 +146,7 @@ public class TextFilterTests
     public void Reload_WithNoConfig_ShouldNotThrow()
     {
         // Arrange
-        var filter = new TextFilter(_loggerMock.Object, null);
+        var filter = new TextFilter(_loggerMock.Object, correctionRepository: null, configPath: null);
 
         // Act & Assert - should not throw
         filter.Reload();
@@ -156,7 +156,7 @@ public class TextFilterTests
     public void Apply_WithValidText_ShouldPreserveContent()
     {
         // Arrange
-        var filter = new TextFilter(_loggerMock.Object, null);
+        var filter = new TextFilter(_loggerMock.Object, correctionRepository: null, configPath: null);
         var text = "This is a valid transcription.";
 
         // Act
@@ -194,7 +194,7 @@ public class TextFilterWithConfigTests : IDisposable
         File.WriteAllText(_tempConfigPath, config);
 
         // Act
-        var filter = new TextFilter(_loggerMock.Object, _tempConfigPath);
+        var filter = new TextFilter(_loggerMock.Object, correctionRepository: null, configPath: _tempConfigPath);
 
         // Assert
         Assert.True(filter.IsEnabled);
@@ -207,7 +207,7 @@ public class TextFilterWithConfigTests : IDisposable
         // Arrange
         var config = """{"remove": ["[music]", "[applause]"]}""";
         File.WriteAllText(_tempConfigPath, config);
-        var filter = new TextFilter(_loggerMock.Object, _tempConfigPath);
+        var filter = new TextFilter(_loggerMock.Object, correctionRepository: null, configPath: _tempConfigPath);
 
         // Act
         var result = filter.Apply("Hello [music] World");
@@ -222,7 +222,7 @@ public class TextFilterWithConfigTests : IDisposable
         // Arrange
         var config = """{"remove": ["HELLO"]}""";
         File.WriteAllText(_tempConfigPath, config);
-        var filter = new TextFilter(_loggerMock.Object, _tempConfigPath);
+        var filter = new TextFilter(_loggerMock.Object, correctionRepository: null, configPath: _tempConfigPath);
 
         // Act
         var result = filter.Apply("hello world");
@@ -237,7 +237,7 @@ public class TextFilterWithConfigTests : IDisposable
         // Arrange
         var config = """{"remove": ["[music]", "[laughter]", "[applause]"]}""";
         File.WriteAllText(_tempConfigPath, config);
-        var filter = new TextFilter(_loggerMock.Object, _tempConfigPath);
+        var filter = new TextFilter(_loggerMock.Object, correctionRepository: null, configPath: _tempConfigPath);
 
         // Act
         var result = filter.Apply("[music] Hello [laughter] World [applause]");
@@ -252,7 +252,7 @@ public class TextFilterWithConfigTests : IDisposable
         // Arrange
         var config = """{"remove": ["[music]"]}""";
         File.WriteAllText(_tempConfigPath, config);
-        var filter = new TextFilter(_loggerMock.Object, _tempConfigPath);
+        var filter = new TextFilter(_loggerMock.Object, correctionRepository: null, configPath: _tempConfigPath);
 
         // Act
         var result = filter.Apply("Hello World");
@@ -267,7 +267,7 @@ public class TextFilterWithConfigTests : IDisposable
         // Arrange
         var config1 = """{"remove": ["pattern1"]}""";
         File.WriteAllText(_tempConfigPath, config1);
-        var filter = new TextFilter(_loggerMock.Object, _tempConfigPath);
+        var filter = new TextFilter(_loggerMock.Object, correctionRepository: null, configPath: _tempConfigPath);
         Assert.Equal(1, filter.PatternCount);
 
         // Act - update config and reload
@@ -287,7 +287,7 @@ public class TextFilterWithConfigTests : IDisposable
         File.WriteAllText(_tempConfigPath, config);
 
         // Act
-        var filter = new TextFilter(_loggerMock.Object, _tempConfigPath);
+        var filter = new TextFilter(_loggerMock.Object, correctionRepository: null, configPath: _tempConfigPath);
 
         // Assert
         Assert.False(filter.IsEnabled);
@@ -302,7 +302,7 @@ public class TextFilterWithConfigTests : IDisposable
         File.WriteAllText(_tempConfigPath, config);
 
         // Act
-        var filter = new TextFilter(_loggerMock.Object, _tempConfigPath);
+        var filter = new TextFilter(_loggerMock.Object, correctionRepository: null, configPath: _tempConfigPath);
 
         // Assert
         Assert.Equal(2, filter.PatternCount);
@@ -315,7 +315,7 @@ public class TextFilterWithConfigTests : IDisposable
         File.WriteAllText(_tempConfigPath, "invalid json {{{");
 
         // Act
-        var filter = new TextFilter(_loggerMock.Object, _tempConfigPath);
+        var filter = new TextFilter(_loggerMock.Object, correctionRepository: null, configPath: _tempConfigPath);
 
         // Assert
         Assert.False(filter.IsEnabled);
@@ -327,7 +327,7 @@ public class TextFilterWithConfigTests : IDisposable
         // Arrange
         var config = """{"remove": ["[pause]"]}""";
         File.WriteAllText(_tempConfigPath, config);
-        var filter = new TextFilter(_loggerMock.Object, _tempConfigPath);
+        var filter = new TextFilter(_loggerMock.Object, correctionRepository: null, configPath: _tempConfigPath);
 
         // Act
         var result = filter.Apply("Hello    [pause]    World");
@@ -342,7 +342,7 @@ public class TextFilterWithConfigTests : IDisposable
         // Arrange
         var config = """{"remove": ["[intro]"]}""";
         File.WriteAllText(_tempConfigPath, config);
-        var filter = new TextFilter(_loggerMock.Object, _tempConfigPath);
+        var filter = new TextFilter(_loggerMock.Object, correctionRepository: null, configPath: _tempConfigPath);
 
         // Act
         var result = filter.Apply("[intro] Welcome everyone");
@@ -357,7 +357,7 @@ public class TextFilterWithConfigTests : IDisposable
         // Arrange
         var config = """{"remove": ["[outro]"]}""";
         File.WriteAllText(_tempConfigPath, config);
-        var filter = new TextFilter(_loggerMock.Object, _tempConfigPath);
+        var filter = new TextFilter(_loggerMock.Object, correctionRepository: null, configPath: _tempConfigPath);
 
         // Act
         var result = filter.Apply("Goodbye everyone [outro]");
@@ -372,7 +372,7 @@ public class TextFilterWithConfigTests : IDisposable
         // Arrange
         var config = """{"remove": ["[silence]"]}""";
         File.WriteAllText(_tempConfigPath, config);
-        var filter = new TextFilter(_loggerMock.Object, _tempConfigPath);
+        var filter = new TextFilter(_loggerMock.Object, correctionRepository: null, configPath: _tempConfigPath);
 
         // Act
         var result = filter.Apply("[silence]");

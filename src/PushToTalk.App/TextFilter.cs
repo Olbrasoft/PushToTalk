@@ -1,5 +1,7 @@
 using System.Text.Json;
 using Microsoft.Extensions.Logging;
+using PushToTalk.Data;
+using PushToTalk.Data.Entities;
 
 namespace Olbrasoft.PushToTalk.App;
 
@@ -12,22 +14,49 @@ public class TextFiltersConfig
     /// List of text patterns to remove from transcription output.
     /// </summary>
     public List<string> Remove { get; set; } = new();
+
+    /// <summary>
+    /// Dictionary of text replacements (incorrect -> correct).
+    /// File-based fallback if database is not available.
+    /// </summary>
+    public Dictionary<string, string> Replace { get; set; } = new();
+
+    /// <summary>
+    /// Whether to enable database-driven corrections.
+    /// Default is true.
+    /// </summary>
+    public bool EnableDatabaseCorrections { get; set; } = true;
 }
 
 /// <summary>
 /// Filters unwanted text patterns from Whisper transcription output.
+/// Supports both database-driven corrections and file-based filters.
 /// </summary>
 public class TextFilter
 {
     private readonly ILogger<TextFilter> _logger;
     private readonly string? _configPath;
-    private List<string> _patterns = new();
+    private readonly ITranscriptionCorrectionRepository? _correctionRepository;
+
+    // File-based filters
+    private List<string> _removePatterns = new();
+    private Dictionary<string, string> _fileReplacements = new();
     private DateTime _lastModified;
+
+    // Database corrections cache
+    private IReadOnlyList<TranscriptionCorrection> _cachedCorrections = Array.Empty<TranscriptionCorrection>();
+    private DateTime _cacheExpiry = DateTime.MinValue;
+    private static readonly TimeSpan CacheDuration = TimeSpan.FromMinutes(5);
+
     private readonly object _lock = new();
 
-    public TextFilter(ILogger<TextFilter> logger, string? configPath = null)
+    public TextFilter(
+        ILogger<TextFilter> logger,
+        ITranscriptionCorrectionRepository? correctionRepository = null,
+        string? configPath = null)
     {
-        _logger = logger;
+        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        _correctionRepository = correctionRepository;
         _configPath = configPath;
 
         if (!string.IsNullOrWhiteSpace(_configPath))
@@ -36,25 +65,38 @@ public class TextFilter
         }
         else
         {
-            _logger.LogInformation("Text filtering disabled (no config path)");
+            _logger.LogInformation("File-based text filtering disabled (no config path)");
+        }
+
+        if (_correctionRepository != null)
+        {
+            _logger.LogInformation("Database-driven corrections enabled");
         }
     }
 
     /// <summary>
-    /// Gets whether filtering is enabled.
+    /// Gets whether filtering is enabled (file-based or database).
     /// </summary>
-    public bool IsEnabled => _patterns.Count > 0;
+    public bool IsEnabled => _removePatterns.Count > 0
+        || _fileReplacements.Count > 0
+        || _correctionRepository != null;
 
     /// <summary>
-    /// Gets the number of loaded filter patterns.
+    /// Gets the number of loaded remove patterns (file-based only).
     /// </summary>
-    public int PatternCount => _patterns.Count;
+    public int PatternCount => _removePatterns.Count;
+
+    /// <summary>
+    /// Gets the number of cached database corrections.
+    /// </summary>
+    public int CachedCorrectionsCount => _cachedCorrections.Count;
 
     /// <summary>
     /// Applies all filters to the input text.
+    /// Order: Database corrections → File replacements → Remove patterns → Normalize
     /// </summary>
     /// <param name="text">Text to filter.</param>
-    /// <returns>Filtered text with patterns removed.</returns>
+    /// <returns>Filtered text with corrections and patterns applied.</returns>
     public string Apply(string? text)
     {
         if (string.IsNullOrWhiteSpace(text))
@@ -63,30 +105,23 @@ public class TextFilter
         // Check for file changes (hot reload)
         CheckForUpdates();
 
+        // Refresh database corrections cache if needed
+        RefreshCorrectionsCache();
+
         var result = text;
         var originalLength = result.Length;
 
-        lock (_lock)
-        {
-            foreach (var pattern in _patterns)
-            {
-                if (result.Contains(pattern, StringComparison.OrdinalIgnoreCase))
-                {
-                    var before = result;
-                    result = result.Replace(pattern, "", StringComparison.OrdinalIgnoreCase);
-                    _logger.LogDebug("Filtered pattern '{Pattern}' from text", pattern);
-                }
-            }
-        }
+        // Step 1: Apply database corrections (highest priority)
+        result = ApplyDatabaseCorrections(result);
 
-        // Trim whitespace after filtering
-        result = result.Trim();
+        // Step 2: Apply file-based replacements
+        result = ApplyFileReplacements(result);
 
-        // Normalize multiple spaces to single space
-        while (result.Contains("  "))
-        {
-            result = result.Replace("  ", " ");
-        }
+        // Step 3: Apply remove patterns
+        result = ApplyRemovePatterns(result);
+
+        // Step 4: Normalize whitespace
+        result = NormalizeWhitespace(result);
 
         if (result.Length != originalLength)
         {
@@ -94,6 +129,171 @@ public class TextFilter
         }
 
         return result;
+    }
+
+    /// <summary>
+    /// Applies database-driven corrections with priority ordering.
+    /// </summary>
+    private string ApplyDatabaseCorrections(string text)
+    {
+        if (_correctionRepository == null || _cachedCorrections.Count == 0)
+            return text;
+
+        var result = text;
+
+        // Apply corrections in priority order (highest first)
+        foreach (var correction in _cachedCorrections)
+        {
+            var comparison = correction.CaseSensitive
+                ? StringComparison.Ordinal
+                : StringComparison.OrdinalIgnoreCase;
+
+            if (result.Contains(correction.IncorrectText, comparison))
+            {
+                result = result.Replace(
+                    correction.IncorrectText,
+                    correction.CorrectText,
+                    comparison);
+
+                _logger.LogDebug(
+                    "Applied DB correction: '{Incorrect}' → '{Correct}' (priority: {Priority})",
+                    correction.IncorrectText,
+                    correction.CorrectText,
+                    correction.Priority);
+
+                // Track usage asynchronously (don't block)
+                _ = TrackCorrectionUsageAsync(correction.Id);
+            }
+        }
+
+        return result;
+    }
+
+    /// <summary>
+    /// Applies file-based text replacements.
+    /// </summary>
+    private string ApplyFileReplacements(string text)
+    {
+        if (_fileReplacements.Count == 0)
+            return text;
+
+        var result = text;
+
+        lock (_lock)
+        {
+            foreach (var (incorrect, correct) in _fileReplacements)
+            {
+                if (result.Contains(incorrect, StringComparison.OrdinalIgnoreCase))
+                {
+                    result = result.Replace(incorrect, correct, StringComparison.OrdinalIgnoreCase);
+                    _logger.LogDebug("Applied file replacement: '{Incorrect}' → '{Correct}'", incorrect, correct);
+                }
+            }
+        }
+
+        return result;
+    }
+
+    /// <summary>
+    /// Applies remove patterns from file configuration.
+    /// </summary>
+    private string ApplyRemovePatterns(string text)
+    {
+        if (_removePatterns.Count == 0)
+            return text;
+
+        var result = text;
+
+        lock (_lock)
+        {
+            foreach (var pattern in _removePatterns)
+            {
+                if (result.Contains(pattern, StringComparison.OrdinalIgnoreCase))
+                {
+                    result = result.Replace(pattern, "", StringComparison.OrdinalIgnoreCase);
+                    _logger.LogDebug("Removed pattern: '{Pattern}'", pattern);
+                }
+            }
+        }
+
+        return result;
+    }
+
+    /// <summary>
+    /// Normalizes whitespace (trim + collapse multiple spaces).
+    /// </summary>
+    private static string NormalizeWhitespace(string text)
+    {
+        var result = text.Trim();
+
+        // Collapse multiple spaces to single space
+        while (result.Contains("  "))
+        {
+            result = result.Replace("  ", " ");
+        }
+
+        return result;
+    }
+
+    /// <summary>
+    /// Refreshes the database corrections cache if expired.
+    /// </summary>
+    private void RefreshCorrectionsCache()
+    {
+        if (_correctionRepository == null)
+            return;
+
+        if (DateTime.UtcNow < _cacheExpiry)
+            return;
+
+        lock (_lock)
+        {
+            // Double-check after acquiring lock
+            if (DateTime.UtcNow < _cacheExpiry)
+                return;
+
+            try
+            {
+                // Synchronous call is acceptable for cache refresh
+                _cachedCorrections = _correctionRepository
+                    .GetActiveCorrectionsAsync()
+                    .GetAwaiter()
+                    .GetResult();
+
+                _cacheExpiry = DateTime.UtcNow.Add(CacheDuration);
+
+                _logger.LogInformation(
+                    "Refreshed corrections cache: {Count} active corrections (expires: {Expiry})",
+                    _cachedCorrections.Count,
+                    _cacheExpiry);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to refresh corrections cache");
+
+                // Retry in 30 seconds on error
+                _cacheExpiry = DateTime.UtcNow.AddSeconds(30);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Tracks correction usage asynchronously for analytics.
+    /// </summary>
+    private async Task TrackCorrectionUsageAsync(int correctionId)
+    {
+        if (_correctionRepository == null)
+            return;
+
+        try
+        {
+            await _correctionRepository.TrackUsageAsync(correctionId);
+        }
+        catch (Exception ex)
+        {
+            // Don't fail the correction if tracking fails
+            _logger.LogWarning(ex, "Failed to track correction usage for ID {CorrectionId}", correctionId);
+        }
     }
 
     /// <summary>
@@ -129,14 +329,21 @@ public class TextFilter
                     PropertyNameCaseInsensitive = true
                 });
 
-                if (config?.Remove != null)
+                if (config != null)
                 {
-                    _patterns = config.Remove
-                        .Where(p => !string.IsNullOrWhiteSpace(p))
-                        .ToList();
+                    // Load remove patterns
+                    _removePatterns = config.Remove
+                        ?.Where(p => !string.IsNullOrWhiteSpace(p))
+                        .ToList() ?? new();
 
-                    _logger.LogInformation("Loaded {Count} text filter patterns from {Path}",
-                        _patterns.Count, _configPath);
+                    // Load replace mappings
+                    _fileReplacements = config.Replace ?? new();
+
+                    _logger.LogInformation(
+                        "Loaded text filters from {Path}: {RemoveCount} remove patterns, {ReplaceCount} replacements",
+                        _configPath,
+                        _removePatterns.Count,
+                        _fileReplacements.Count);
                 }
             }
         }
