@@ -7,7 +7,7 @@ using PushToTalk.Data.EntityFrameworkCore;
 namespace Olbrasoft.PushToTalk.Service.Services;
 
 /// <summary>
-/// Service for correcting Whisper transcriptions using LLM with circuit breaker pattern.
+/// Service for correcting Whisper transcriptions using Mistral LLM with circuit breaker pattern.
 /// </summary>
 public class LlmCorrectionService : ILlmCorrectionService
 {
@@ -20,6 +20,7 @@ public class LlmCorrectionService : ILlmCorrectionService
     private const int MinTextLength = 30;
     private const int CircuitBreakerFailureThreshold = 3;
     private const int CircuitBreakerRetryMinutes = 5;
+    private const int CircuitBreakerStateId = 1; // Single record in database
 
     public LlmCorrectionService(
         ILlmProvider llmProvider,
@@ -46,7 +47,7 @@ public class LlmCorrectionService : ILlmCorrectionService
         }
 
         // Check circuit breaker state
-        var circuitState = await GetOrCreateCircuitBreakerStateAsync(_llmProvider.ProviderName, cancellationToken);
+        var circuitState = await GetOrCreateCircuitBreakerStateAsync(cancellationToken);
 
         if (circuitState.IsOpen)
         {
@@ -54,87 +55,88 @@ public class LlmCorrectionService : ILlmCorrectionService
 
             if (timeSinceOpened < TimeSpan.FromMinutes(CircuitBreakerRetryMinutes))
             {
-                _logger.LogWarning("Circuit breaker is OPEN for {Provider}. Skipping LLM correction. Time since opened: {TimeSince}",
-                    _llmProvider.ProviderName, timeSinceOpened);
+                _logger.LogWarning("Circuit breaker is OPEN. Skipping LLM correction. Time since opened: {TimeSince}",
+                    timeSinceOpened);
                 return text;
             }
 
             // Retry after timeout
-            _logger.LogInformation("Circuit breaker retry timeout elapsed for {Provider}. Attempting to close circuit.",
-                _llmProvider.ProviderName);
+            _logger.LogInformation("Circuit breaker retry timeout elapsed. Attempting to close circuit.");
         }
 
         // Attempt correction
         var stopwatch = Stopwatch.StartNew();
-        string? correctedText = null;
-        string? errorMessage = null;
-        bool success = false;
 
         try
         {
-            correctedText = await _llmProvider.CorrectTextAsync(text, cancellationToken);
-            success = true;
+            var correctedText = await _llmProvider.CorrectTextAsync(text, cancellationToken);
             stopwatch.Stop();
 
             _logger.LogInformation("LLM correction succeeded for transcription {TranscriptionId}. Duration: {Duration}ms",
                 transcriptionId, stopwatch.ElapsedMilliseconds);
 
+            // Save successful correction
+            var correction = new LlmCorrection
+            {
+                WhisperTranscriptionId = transcriptionId,
+                CorrectedText = correctedText,
+                DurationMs = (int)stopwatch.ElapsedMilliseconds,
+                CreatedAt = DateTime.UtcNow
+            };
+
+            _dbContext.LlmCorrections.Add(correction);
+            await _dbContext.SaveChangesAsync(cancellationToken);
+
             // Close circuit breaker on success
             await CloseCircuitBreakerAsync(circuitState, cancellationToken);
+
+            return correctedText;
         }
         catch (Exception ex)
         {
             stopwatch.Stop();
-            success = false;
-            errorMessage = ex.Message;
 
             _logger.LogError(ex, "LLM correction failed for transcription {TranscriptionId}: {Error}",
                 transcriptionId, ex.Message);
 
-            // Open circuit breaker on failure
-            await HandleFailureAsync(circuitState, errorMessage, cancellationToken);
+            // Save error
+            var error = new LlmError
+            {
+                WhisperTranscriptionId = transcriptionId,
+                ErrorMessage = ex.Message,
+                DurationMs = (int)stopwatch.ElapsedMilliseconds,
+                CreatedAt = DateTime.UtcNow
+            };
+
+            _dbContext.LlmErrors.Add(error);
+            await _dbContext.SaveChangesAsync(cancellationToken);
+
+            // Handle circuit breaker failure
+            await HandleFailureAsync(circuitState, ex.Message, cancellationToken);
 
             // Return original text on failure
-            correctedText = text;
+            return text;
         }
-
-        // Save correction record
-        var correction = new LlmCorrection
-        {
-            WhisperTranscriptionId = transcriptionId,
-            ModelName = _llmProvider.ModelName,
-            Provider = _llmProvider.ProviderName,
-            CorrectedText = success ? correctedText : null,
-            DurationMs = (int)stopwatch.ElapsedMilliseconds,
-            Success = success,
-            ErrorMessage = errorMessage,
-            CreatedAt = DateTime.UtcNow
-        };
-
-        _dbContext.LlmCorrections.Add(correction);
-        await _dbContext.SaveChangesAsync(cancellationToken);
-
-        return correctedText ?? text;
     }
 
     public async Task<bool> IsCircuitOpenAsync(string providerName)
     {
         var state = await _dbContext.CircuitBreakerStates
-            .FirstOrDefaultAsync(s => s.Provider == providerName);
+            .FirstOrDefaultAsync(s => s.Id == CircuitBreakerStateId);
 
         return state?.IsOpen ?? false;
     }
 
-    private async Task<CircuitBreakerState> GetOrCreateCircuitBreakerStateAsync(string providerName, CancellationToken cancellationToken)
+    private async Task<CircuitBreakerState> GetOrCreateCircuitBreakerStateAsync(CancellationToken cancellationToken)
     {
         var state = await _dbContext.CircuitBreakerStates
-            .FirstOrDefaultAsync(s => s.Provider == providerName, cancellationToken);
+            .FirstOrDefaultAsync(s => s.Id == CircuitBreakerStateId, cancellationToken);
 
         if (state == null)
         {
             state = new CircuitBreakerState
             {
-                Provider = providerName,
+                Id = CircuitBreakerStateId,
                 IsOpen = false,
                 ConsecutiveFailures = 0,
                 CreatedAt = DateTime.UtcNow,
@@ -159,15 +161,15 @@ public class LlmCorrectionService : ILlmCorrectionService
             state.IsOpen = true;
             state.OpenedAt = DateTime.UtcNow;
 
-            _logger.LogWarning("Circuit breaker OPENED for {Provider} after {Failures} consecutive failures",
-                state.Provider, state.ConsecutiveFailures);
+            _logger.LogWarning("Circuit breaker OPENED after {Failures} consecutive failures",
+                state.ConsecutiveFailures);
 
             // Send notifications
             await Task.WhenAll(
                 _emailNotificationService.SendCircuitOpenedNotificationAsync(
-                    state.Provider, state.ConsecutiveFailures, errorMessage, cancellationToken),
+                    _llmProvider.ProviderName, state.ConsecutiveFailures, errorMessage, cancellationToken),
                 _notificationClient.SendNotificationAsync(
-                    $"Circuit breaker se otevřel pro {state.Provider} po {state.ConsecutiveFailures} selháních. LLM korekce jsou dočasně pozastaveny.",
+                    $"Circuit breaker se otevřel pro Mistral po {state.ConsecutiveFailures} selháních. LLM korekce jsou dočasně pozastaveny.",
                     cancellationToken)
             );
         }
@@ -193,13 +195,13 @@ public class LlmCorrectionService : ILlmCorrectionService
 
         if (wasOpen)
         {
-            _logger.LogInformation("Circuit breaker CLOSED for {Provider}", state.Provider);
+            _logger.LogInformation("Circuit breaker CLOSED");
 
             // Send notifications
             await Task.WhenAll(
-                _emailNotificationService.SendCircuitClosedNotificationAsync(state.Provider, cancellationToken),
+                _emailNotificationService.SendCircuitClosedNotificationAsync(_llmProvider.ProviderName, cancellationToken),
                 _notificationClient.SendNotificationAsync(
-                    $"Circuit breaker se uzavřel pro {state.Provider}. LLM korekce jsou opět aktivní.",
+                    "Circuit breaker se uzavřel pro Mistral. LLM korekce jsou opět aktivní.",
                     cancellationToken)
             );
         }

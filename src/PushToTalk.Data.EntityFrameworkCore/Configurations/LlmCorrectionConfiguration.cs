@@ -18,29 +18,13 @@ public class LlmCorrectionConfiguration : IEntityTypeConfiguration<LlmCorrection
             .HasColumnName("whisper_transcription_id")
             .IsRequired();
 
-        builder.Property(c => c.ModelName)
-            .HasColumnName("model_name")
-            .IsRequired()
-            .HasMaxLength(100);
-
-        builder.Property(c => c.Provider)
-            .HasColumnName("provider")
-            .IsRequired()
-            .HasMaxLength(50);
-
         builder.Property(c => c.CorrectedText)
-            .HasColumnName("corrected_text");
+            .HasColumnName("corrected_text")
+            .IsRequired();
 
         builder.Property(c => c.DurationMs)
             .HasColumnName("duration_ms")
             .IsRequired();
-
-        builder.Property(c => c.Success)
-            .HasColumnName("success")
-            .IsRequired();
-
-        builder.Property(c => c.ErrorMessage)
-            .HasColumnName("error_message");
 
         builder.Property(c => c.CreatedAt)
             .HasColumnName("created_at")
@@ -56,6 +40,5 @@ public class LlmCorrectionConfiguration : IEntityTypeConfiguration<LlmCorrection
         // Indexes for common queries
         builder.HasIndex(c => c.WhisperTranscriptionId);
         builder.HasIndex(c => c.CreatedAt);
-        builder.HasIndex(c => new { c.Provider, c.Success });
     }
 }

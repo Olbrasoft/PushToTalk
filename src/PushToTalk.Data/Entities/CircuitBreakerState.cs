@@ -1,20 +1,16 @@
 namespace PushToTalk.Data.Entities;
 
 /// <summary>
-/// Tracks circuit breaker state for LLM providers.
+/// Tracks circuit breaker state for Mistral LLM.
 /// Prevents cascading failures by opening circuit after consecutive errors.
+/// NOTE: Single record in database (ID=1), no provider field needed (Mistral-only).
 /// </summary>
 public class CircuitBreakerState
 {
     /// <summary>
-    /// Unique identifier for this circuit breaker state.
+    /// Unique identifier for this circuit breaker state (always 1).
     /// </summary>
     public int Id { get; set; }
-
-    /// <summary>
-    /// Provider name ('mistral', 'groq', 'cerebras').
-    /// </summary>
-    public string Provider { get; set; } = string.Empty;
 
     /// <summary>
     /// Is the circuit currently open (blocking requests)?

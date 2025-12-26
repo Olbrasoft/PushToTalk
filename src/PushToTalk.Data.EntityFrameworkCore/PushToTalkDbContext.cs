@@ -24,19 +24,25 @@ public class PushToTalkDbContext : DbContext
 
     /// <summary>
     /// Gets or sets the LlmCorrections DbSet.
-    /// Used for storing LLM-based corrections of Whisper transcriptions.
+    /// Used for storing successful LLM corrections of Whisper transcriptions.
     /// </summary>
     public DbSet<LlmCorrection> LlmCorrections => Set<LlmCorrection>();
 
     /// <summary>
-    /// Gets or sets the LlmApiKeys DbSet.
-    /// Used for tracking API key usage and rotation.
+    /// Gets or sets the LlmErrors DbSet.
+    /// Used for storing failed LLM correction attempts.
     /// </summary>
-    public DbSet<LlmApiKey> LlmApiKeys => Set<LlmApiKey>();
+    public DbSet<LlmError> LlmErrors => Set<LlmError>();
+
+    /// <summary>
+    /// Gets or sets the MistralConfigs DbSet.
+    /// Used for storing Mistral API configuration.
+    /// </summary>
+    public DbSet<MistralConfig> MistralConfigs => Set<MistralConfig>();
 
     /// <summary>
     /// Gets or sets the CircuitBreakerStates DbSet.
-    /// Used for tracking circuit breaker state for LLM providers.
+    /// Used for tracking circuit breaker state.
     /// </summary>
     public DbSet<CircuitBreakerState> CircuitBreakerStates => Set<CircuitBreakerState>();
 

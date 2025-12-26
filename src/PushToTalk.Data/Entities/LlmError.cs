@@ -1,32 +1,32 @@
 namespace PushToTalk.Data.Entities;
 
 /// <summary>
-/// Represents an LLM correction attempt for a Whisper transcription.
+/// Represents a failed LLM correction attempt.
 /// </summary>
-public class LlmCorrection
+public class LlmError
 {
     /// <summary>
-    /// Unique identifier for this correction.
+    /// Unique identifier for this error.
     /// </summary>
     public int Id { get; set; }
 
     /// <summary>
-    /// Foreign key to WhisperTranscription (original text is stored there - normalization).
+    /// Foreign key to WhisperTranscription that failed to correct.
     /// </summary>
     public int WhisperTranscriptionId { get; set; }
 
     /// <summary>
-    /// Corrected text returned by LLM (NEVER NULL - successful corrections only).
+    /// Error message describing why correction failed (NEVER NULL).
     /// </summary>
-    public string CorrectedText { get; set; } = string.Empty;
+    public string ErrorMessage { get; set; } = string.Empty;
 
     /// <summary>
-    /// API call duration in milliseconds.
+    /// API call duration in milliseconds (how long before it failed).
     /// </summary>
     public int DurationMs { get; set; }
 
     /// <summary>
-    /// When this correction was created (UTC).
+    /// When this error occurred (UTC).
     /// </summary>
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 

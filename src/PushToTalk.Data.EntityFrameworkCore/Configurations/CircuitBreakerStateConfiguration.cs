@@ -14,11 +14,6 @@ public class CircuitBreakerStateConfiguration : IEntityTypeConfiguration<Circuit
         builder.Property(s => s.Id)
             .HasColumnName("id");
 
-        builder.Property(s => s.Provider)
-            .HasColumnName("provider")
-            .IsRequired()
-            .HasMaxLength(50);
-
         builder.Property(s => s.IsOpen)
             .HasColumnName("is_open")
             .IsRequired()
@@ -42,11 +37,7 @@ public class CircuitBreakerStateConfiguration : IEntityTypeConfiguration<Circuit
             .IsRequired()
             .HasDefaultValueSql("NOW()");
 
-        // Unique constraint - one state per provider
-        builder.HasIndex(s => s.Provider)
-            .IsUnique();
-
-        // Index for checking open circuits
-        builder.HasIndex(s => new { s.Provider, s.IsOpen });
+        // Single record in database (ID=1) for Mistral circuit breaker
+        // No indexes needed for single-record table
     }
 }
