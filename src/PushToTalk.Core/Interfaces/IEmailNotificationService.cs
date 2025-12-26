@@ -1,7 +1,7 @@
 namespace Olbrasoft.PushToTalk.Core.Interfaces;
 
 /// <summary>
-/// Service for sending email notifications about circuit breaker state changes.
+/// Service for sending email notifications.
 /// </summary>
 public interface IEmailNotificationService
 {

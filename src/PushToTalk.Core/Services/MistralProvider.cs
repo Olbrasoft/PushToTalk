@@ -135,6 +135,7 @@ public class MistralProvider : ILlmProvider
 **VRAŤ JEN OPRAVENOU TRANSKRIPCI. ŽÁDNÉ <think>, ŽÁDNÉ KOMENTÁŘE.**";
 
     public string ProviderName => "mistral";
+    public string ModelName => _options.Model;
 
     public MistralProvider(
         HttpClient httpClient,

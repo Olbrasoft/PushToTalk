@@ -2,8 +2,9 @@ namespace Olbrasoft.PushToTalk.Core.Interfaces;
 
 /// <summary>
 /// Client for sending notifications to VirtualAssistant service.
+/// VirtualAssistant will read notifications via TTS.
 /// </summary>
-public interface IVirtualAssistantClient
+public interface INotificationClient
 {
     /// <summary>
     /// Sends a notification to VirtualAssistant.

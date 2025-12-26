@@ -11,6 +11,11 @@ public interface ILlmProvider
     string ProviderName { get; }
 
     /// <summary>
+    /// Gets the model name (e.g., 'mistral-large-latest').
+    /// </summary>
+    string ModelName { get; }
+
+    /// <summary>
     /// Corrects the given text using the LLM.
     /// </summary>
     /// <param name="text">Text to correct</param>

@@ -1,7 +1,7 @@
 namespace Olbrasoft.PushToTalk.Core.Interfaces;
 
 /// <summary>
-/// Service for correcting Whisper transcriptions using LLM with circuit breaker pattern.
+/// Service for LLM-based transcription correction with circuit breaker.
 /// </summary>
 public interface ILlmCorrectionService
 {
