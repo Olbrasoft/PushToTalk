@@ -173,6 +173,9 @@ public static class ServiceCollectionExtensions
         services.Configure<Core.Configuration.ServiceEndpoints>(
             configuration.GetSection(Core.Configuration.ServiceEndpoints.SectionName));
 
+        // Prompt loader for LLM system prompts
+        services.AddSingleton<Core.Interfaces.IPromptLoader, Core.Services.EmbeddedPromptLoader>();
+
         // HTTP client for MistralProvider
         services.AddHttpClient<ILlmProvider, Core.Services.MistralProvider>();
 
