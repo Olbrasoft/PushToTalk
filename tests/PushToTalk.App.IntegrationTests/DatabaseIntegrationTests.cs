@@ -1,6 +1,11 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Moq;
+using Olbrasoft.NotificationAudio.Abstractions;
+using Olbrasoft.PushToTalk.App.Services;
+using Olbrasoft.PushToTalk.Core.Interfaces;
+using Olbrasoft.PushToTalk.Core.Models;
 using Olbrasoft.Testing.Xunit.Attributes;
 using PushToTalk.App.IntegrationTests.Helpers;
 using PushToTalk.Data;
@@ -307,5 +312,92 @@ public class DatabaseIntegrationTests : IAsyncLifetime
                 It.IsAny<Exception>(),
                 It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
             Times.Once);
+    }
+
+    [SkipOnCIFact]
+    public async Task TranscriptionCoordinator_CompleteFlow_ReturnsMistralCorrectedText()
+    {
+        // CRITICAL TEST: Verify that TranscriptionCoordinator returns Mistral-corrected text
+        // This tests the COMPLETE flow: Audio → Whisper → TextFilter → Database → Mistral → Return
+        // Bug report: User receives "v adresáři lokal llomenobin máme bež soubory"
+        // Expected: "V adresáři `~/.local/bin/` máme bashové soubory."
+
+        // Arrange - Create mocks for external dependencies
+        var mockSpeechTranscriber = new Mock<ISpeechTranscriber>();
+        var mockNotificationPlayer = new Mock<INotificationPlayer>();
+        var mockLlmProvider = new Mock<ILlmProvider>();
+        var mockEmailService = new Mock<IEmailNotificationService>();
+        var mockNotificationClient = new Mock<INotificationClient>();
+
+        var whisperText = "v adresáři lokal llomenobin máme bež soubory";
+        var mistralCorrectedText = "V adresáři `~/.local/bin/` máme bashové soubory.";
+
+        // Mock Whisper to return uncorrected text
+        mockSpeechTranscriber
+            .Setup(t => t.TranscribeAsync(It.IsAny<byte[]>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new TranscriptionResult(whisperText, 0.95f));
+
+        // Mock Mistral to return corrected text
+        mockLlmProvider
+            .Setup(p => p.CorrectTextAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(mistralCorrectedText);
+
+        // Mock notification player (sound feedback)
+        mockNotificationPlayer
+            .Setup(p => p.PlayAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+
+        // Create real LlmCorrectionService with mocked provider
+        var llmLogger = new Mock<ILogger<Olbrasoft.PushToTalk.Service.Services.LlmCorrectionService>>();
+        var llmService = new Olbrasoft.PushToTalk.Service.Services.LlmCorrectionService(
+            mockLlmProvider.Object,
+            _context,
+            mockEmailService.Object,
+            mockNotificationClient.Object,
+            llmLogger.Object);
+
+        // Create real ServiceScopeFactory with registered services
+        var serviceCollection = new ServiceCollection();
+        serviceCollection.AddScoped<ITranscriptionRepository>(sp => _repository);
+        serviceCollection.AddScoped<ILlmCorrectionService>(sp => llmService);
+        var serviceProvider = serviceCollection.BuildServiceProvider();
+        var serviceScopeFactory = serviceProvider.GetRequiredService<IServiceScopeFactory>();
+
+        // Create TranscriptionCoordinator with real and mocked dependencies
+        var coordinatorLogger = new Mock<ILogger<TranscriptionCoordinator>>();
+        var coordinator = new TranscriptionCoordinator(
+            coordinatorLogger.Object,
+            mockSpeechTranscriber.Object,
+            mockNotificationPlayer.Object,
+            serviceScopeFactory,
+            textFilter: null,  // No TextFilter for this test - testing Mistral correction only
+            soundPath: null);  // No sound feedback
+
+        // Act - Call TranscribeWithFeedbackAsync with audio data
+        var audioData = new byte[16000]; // 0.5 seconds of audio at 16kHz mono 16-bit
+        var result = await coordinator.TranscribeWithFeedbackAsync(audioData);
+
+        // Assert - CRITICAL: Result MUST contain Mistral-corrected text, NOT Whisper text
+        Assert.True(result.Success, "Transcription should succeed");
+        Assert.Equal(mistralCorrectedText, result.Text);
+        Assert.NotEqual(whisperText, result.Text);
+        Assert.Contains("~/.local/bin/", result.Text);
+
+        // Verify Whisper was called once
+        mockSpeechTranscriber.Verify(
+            t => t.TranscribeAsync(audioData, It.IsAny<CancellationToken>()),
+            Times.Once);
+
+        // Verify Mistral was called once with Whisper text
+        mockLlmProvider.Verify(
+            p => p.CorrectTextAsync(whisperText, It.IsAny<CancellationToken>()),
+            Times.Once);
+
+        // Verify database contains the corrected text
+        var dbText = await _repository.GetLatestCorrectedTextAsync();
+        Assert.Equal(mistralCorrectedText, dbText);
+
+        // Dispose coordinator
+        coordinator.Dispose();
     }
 }
