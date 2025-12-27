@@ -116,3 +116,9 @@ finally
 }
 
 Console.WriteLine("Push-to-Talk stopped");
+
+// Make implicit Program class internal to avoid conflicts with PushToTalk.App
+namespace Olbrasoft.PushToTalk.Service
+{
+    internal partial class Program { }
+}
