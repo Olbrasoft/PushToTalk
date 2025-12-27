@@ -13,25 +13,25 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PushToTalk.App", "src\PushT
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{0AB3BF05-4346-4AA6-1389-037BE0695223}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PushToTalk.Linux.Tests", "tests\UnitTests\PushToTalk.Linux.Tests\PushToTalk.Linux.Tests.csproj", "{083AAEE2-22C2-44FC-8D34-5464C26D38CD}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PushToTalk.Linux.Tests", "tests\PushToTalk.Linux.Tests\PushToTalk.Linux.Tests.csproj", "{083AAEE2-22C2-44FC-8D34-5464C26D38CD}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PushToTalk.Core", "src\PushToTalk.Core\PushToTalk.Core.csproj", "{9E5A7ECE-3642-48B0-8386-A5CFA210B853}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PushToTalk.Core.Tests", "tests\UnitTests\PushToTalk.Core.Tests\PushToTalk.Core.Tests.csproj", "{C537AA11-FD94-4B3A-817C-00648E999519}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PushToTalk.Core.Tests", "tests\PushToTalk.Core.Tests\PushToTalk.Core.Tests.csproj", "{C537AA11-FD94-4B3A-817C-00648E999519}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PushToTalk.Service.Tests", "tests\UnitTests\PushToTalk.Service.Tests\PushToTalk.Service.Tests.csproj", "{18F17F64-6CEA-4824-8087-7A3A03428E0E}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PushToTalk.Service.Tests", "tests\PushToTalk.Service.Tests\PushToTalk.Service.Tests.csproj", "{18F17F64-6CEA-4824-8087-7A3A03428E0E}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PushToTalk.Data", "src\PushToTalk.Data\PushToTalk.Data.csproj", "{703B2AF8-F8E4-45EB-87FF-CAE99554CA8F}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PushToTalk.Data.EntityFrameworkCore", "src\PushToTalk.Data.EntityFrameworkCore\PushToTalk.Data.EntityFrameworkCore.csproj", "{6D000256-9758-439E-B2F0-805976ADEE61}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PushToTalk.Data.Tests", "tests\UnitTests\PushToTalk.Data.Tests\PushToTalk.Data.Tests.csproj", "{872BB9DC-E1EA-4482-8B6E-B26228A33349}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PushToTalk.Data.Tests", "tests\PushToTalk.Data.Tests\PushToTalk.Data.Tests.csproj", "{872BB9DC-E1EA-4482-8B6E-B26228A33349}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PushToTalk.Data.EntityFrameworkCore.Tests", "tests\UnitTests\PushToTalk.Data.EntityFrameworkCore.Tests\PushToTalk.Data.EntityFrameworkCore.Tests.csproj", "{70FD8E79-0A99-43EE-A6E5-7393B7BF1B8F}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PushToTalk.Data.EntityFrameworkCore.Tests", "tests\PushToTalk.Data.EntityFrameworkCore.Tests\PushToTalk.Data.EntityFrameworkCore.Tests.csproj", "{70FD8E79-0A99-43EE-A6E5-7393B7BF1B8F}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PushToTalk.App.Tests", "tests\UnitTests\PushToTalk.App.Tests\PushToTalk.App.Tests.csproj", "{06098575-E11F-4643-BD62-5F6F2D8ABD0B}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PushToTalk.App.UnitTests", "tests\PushToTalk.App.UnitTests\PushToTalk.App.UnitTests.csproj", "{06098575-E11F-4643-BD62-5F6F2D8ABD0B}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PushToTalk.App.IntegrationTests", "tests\IntegrationTests\PushToTalk.App.IntegrationTests\PushToTalk.App.IntegrationTests.csproj", "{D6CC5EB0-41AD-4885-8379-EDD2A9B4BFB5}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PushToTalk.App.IntegrationTests", "tests\PushToTalk.App.IntegrationTests\PushToTalk.App.IntegrationTests.csproj", "{D6CC5EB0-41AD-4885-8379-EDD2A9B4BFB5}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

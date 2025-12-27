@@ -21,11 +21,11 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\PushToTalk.Core\PushToTalk.Core.csproj" />
-    <ProjectReference Include="..\..\src\PushToTalk.App\PushToTalk.App.csproj" />
-    <ProjectReference Include="..\..\src\PushToTalk.Service\PushToTalk.Service.csproj" />
-    <ProjectReference Include="..\..\src\PushToTalk.Data\PushToTalk.Data.csproj" />
-    <ProjectReference Include="..\..\src\PushToTalk.Data.EntityFrameworkCore\PushToTalk.Data.EntityFrameworkCore.csproj" />
+    <ProjectReference Include="..\..\..\src\PushToTalk.Core\PushToTalk.Core.csproj" />
+    <ProjectReference Include="..\..\..\src\PushToTalk.App\PushToTalk.App.csproj" />
+    <ProjectReference Include="..\..\..\src\PushToTalk.Service\PushToTalk.Service.csproj" />
+    <ProjectReference Include="..\..\..\src\PushToTalk.Data\PushToTalk.Data.csproj" />
+    <ProjectReference Include="..\..\..\src\PushToTalk.Data.EntityFrameworkCore\PushToTalk.Data.EntityFrameworkCore.csproj" />
   </ItemGroup>
 
 </Project>
