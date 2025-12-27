@@ -17,6 +17,34 @@ sudo ./deploy/deploy.sh /opt/olbrasoft/push-to-talk
 
 **Production path:** `/opt/olbrasoft/push-to-talk` (ONLY deployment target - no dev environment)
 
+## Automatic Deployment (GitHub Actions)
+
+**IMPORTANT:** After successful GitHub Actions deployment, the application MUST be restarted!
+
+**Workflow:**
+1. Push changes to `main` branch
+2. GitHub Actions runs "Build and Test" workflow
+3. If tests pass, "Deploy to Production" workflow triggers automatically
+4. Deployment publishes binaries to `/opt/olbrasoft/push-to-talk/app/`
+5. **Application restart required** (not automatic!)
+
+**Restart application after deployment:**
+```bash
+# Find running process
+ps aux | grep push-to-talk | grep -v grep
+
+# Kill old process (use PID from previous command)
+kill <PID>
+
+# Wait for graceful shutdown
+sleep 2
+
+# Start new version
+/opt/olbrasoft/push-to-talk/app/push-to-talk &
+```
+
+**OR ask the user to restart the application.**
+
 ## Architecture
 
 - **PushToTalk.Core** - Interfaces, domain logic, WhisperModelLocator
