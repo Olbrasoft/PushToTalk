@@ -2,11 +2,13 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Olbrasoft.NotificationAudio.Providers.Linux;
 using Olbrasoft.PushToTalk.App.Configuration;
 using Olbrasoft.PushToTalk.App.Services;
 using Olbrasoft.PushToTalk.App.Tray;
 using Olbrasoft.PushToTalk.Audio;
+using Olbrasoft.PushToTalk.Core.Interfaces;
 using Olbrasoft.PushToTalk.Linux.Speech;
 using Olbrasoft.PushToTalk.TextInput;
 using Olbrasoft.SystemTray.Linux;
@@ -219,10 +221,17 @@ public static class ServiceCollectionExtensions
         // Prompt loader for LLM system prompts
         services.AddSingleton<Core.Interfaces.IPromptLoader, Core.Services.EmbeddedPromptLoader>();
 
-        // HTTP client for MistralProvider (register as concrete type first)
-        services.AddHttpClient<Core.Services.MistralProvider>();
+        // Register MistralProvider as singleton with HttpClient
+        services.AddSingleton<Core.Services.MistralProvider>(sp =>
+        {
+            var httpClient = new HttpClient();
+            var options = sp.GetRequiredService<IOptions<Core.Configuration.MistralOptions>>();
+            var promptLoader = sp.GetRequiredService<Core.Interfaces.IPromptLoader>();
+            var logger = sp.GetRequiredService<ILogger<Core.Services.MistralProvider>>();
+            return new Core.Services.MistralProvider(httpClient, options, promptLoader, logger);
+        });
 
-        // Register MistralProvider as ILlmProvider (same instance)
+        // Register ILlmProvider as alias to the same singleton instance
         services.AddSingleton<ILlmProvider>(sp => sp.GetRequiredService<Core.Services.MistralProvider>());
 
         // HTTP client for NotificationClient (VirtualAssistant)
