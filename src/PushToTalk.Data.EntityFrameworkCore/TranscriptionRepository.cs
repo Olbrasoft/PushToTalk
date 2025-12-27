@@ -1,3 +1,4 @@
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using PushToTalk.Data;
 
@@ -64,5 +65,27 @@ public class TranscriptionRepository : ITranscriptionRepository
             .OrderByDescending(t => t.CreatedAt)
             .Take(100)
             .ToListAsync(ct);
+    }
+
+    /// <inheritdoc />
+    public async Task<string?> GetLatestCorrectedTextAsync(CancellationToken ct = default)
+    {
+        var latestTranscription = await _dbContext.WhisperTranscriptions
+            .OrderByDescending(t => t.CreatedAt)
+            .FirstOrDefaultAsync(ct);
+
+        if (latestTranscription == null)
+        {
+            return null;
+        }
+
+        // Try to get LLM correction for this transcription
+        var correction = await _dbContext.LlmCorrections
+            .Where(c => c.WhisperTranscriptionId == latestTranscription.Id)
+            .OrderByDescending(c => c.CreatedAt)
+            .FirstOrDefaultAsync(ct);
+
+        // Return corrected text if available, otherwise original Whisper text
+        return correction?.CorrectedText ?? latestTranscription.TranscribedText;
     }
 }

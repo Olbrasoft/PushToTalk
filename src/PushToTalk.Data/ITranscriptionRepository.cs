@@ -34,4 +34,12 @@ public interface ITranscriptionRepository
     /// <param name="ct">Cancellation token.</param>
     /// <returns>List of matching transcriptions.</returns>
     Task<IReadOnlyList<WhisperTranscription>> SearchAsync(string query, CancellationToken ct = default);
+
+    /// <summary>
+    /// Gets the latest corrected text from the most recent transcription.
+    /// Returns LLM-corrected text if available, otherwise returns original Whisper text.
+    /// </summary>
+    /// <param name="ct">Cancellation token.</param>
+    /// <returns>The most recent corrected text, or null if no transcriptions exist.</returns>
+    Task<string?> GetLatestCorrectedTextAsync(CancellationToken ct = default);
 }
