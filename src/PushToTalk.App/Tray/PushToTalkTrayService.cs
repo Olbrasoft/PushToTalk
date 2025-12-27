@@ -28,6 +28,7 @@ public class PushToTalkTrayService : IDisposable
     public event Action? OnAboutRequested;
     public event Action? OnStartSpeechToTextRequested;
     public event Action? OnStopSpeechToTextRequested;
+    public event Action<bool>? OnLlmCorrectionToggled;
 
     public bool IsActive => _mainIcon != null;
 
@@ -55,6 +56,7 @@ public class PushToTalkTrayService : IDisposable
             dbusMenuHandler.OnAboutRequested += () => OnAboutRequested?.Invoke();
             dbusMenuHandler.OnStartSpeechToTextRequested += () => OnStartSpeechToTextRequested?.Invoke();
             dbusMenuHandler.OnStopSpeechToTextRequested += () => OnStopSpeechToTextRequested?.Invoke();
+            dbusMenuHandler.OnLlmCorrectionToggled += (enabled) => OnLlmCorrectionToggled?.Invoke(enabled);
         }
     }
 
@@ -133,6 +135,15 @@ public class PushToTalkTrayService : IDisposable
         if (_menuHandler is DBusMenuHandler dbusMenuHandler)
         {
             dbusMenuHandler.UpdateSpeechToTextStatus(isRunning, version);
+        }
+    }
+
+    public void UpdateLlmCorrectionStatus(bool enabled)
+    {
+        _logger.LogInformation("LLM correction status updated: Enabled={Enabled}", enabled);
+        if (_menuHandler is DBusMenuHandler dbusMenuHandler)
+        {
+            dbusMenuHandler.UpdateLlmCorrectionStatus(enabled);
         }
     }
 

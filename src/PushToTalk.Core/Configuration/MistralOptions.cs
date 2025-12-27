@@ -47,4 +47,11 @@ public class MistralOptions
     /// Default: 21 characters.
     /// </summary>
     public int MinTextLengthForCorrection { get; set; } = 21;
+
+    /// <summary>
+    /// Enable or disable sending transcriptions to LLM for correction.
+    /// When disabled, all transcriptions are returned unchanged (Whisper output only).
+    /// Default: true (enabled).
+    /// </summary>
+    public bool Enabled { get; set; } = true;
 }

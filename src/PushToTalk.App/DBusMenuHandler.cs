@@ -22,7 +22,9 @@ internal class DBusMenuHandler : ComCanonicalDbusmenuHandler, ITrayMenuHandler
     private const int Separator1Id = 2;
     private const int SpeechToTextServiceId = 3;
     private const int Separator2Id = 4;
-    private const int QuitId = 5;
+    private const int LlmCorrectionId = 5;
+    private const int Separator3Id = 6;
+    private const int QuitId = 7;
 
     /// <summary>
     /// Event fired when user selects Quit from the menu.
@@ -44,8 +46,14 @@ internal class DBusMenuHandler : ComCanonicalDbusmenuHandler, ITrayMenuHandler
     /// </summary>
     public event Action? OnStartSpeechToTextRequested;
 
+    /// <summary>
+    /// Event fired when user toggles LLM correction.
+    /// </summary>
+    public event Action<bool>? OnLlmCorrectionToggled;
+
     private string _sttServiceStatus = "Checking...";
     private string _sttServiceVersion = "Unknown";
+    private bool _llmCorrectionEnabled = true;
 
     public DBusMenuHandler(ILogger logger) : base(emitOnCapturedContext: false)
     {
@@ -116,6 +124,21 @@ internal class DBusMenuHandler : ComCanonicalDbusmenuHandler, ITrayMenuHandler
     }
 
     /// <summary>
+    /// Updates LLM correction enabled status in menu.
+    /// </summary>
+    public void UpdateLlmCorrectionStatus(bool enabled)
+    {
+        _llmCorrectionEnabled = enabled;
+        _revision++;
+
+        // Emit LayoutUpdated signal only if connection and PathHandler are initialized
+        if (_connection != null && PathHandler != null)
+        {
+            EmitLayoutUpdated(_revision, RootId);
+        }
+    }
+
+    /// <summary>
     /// Returns the menu layout starting from the specified parent ID.
     /// </summary>
     protected override ValueTask<(uint Revision, (int, Dictionary<string, VariantValue>, VariantValue[]) Layout)> OnGetLayoutAsync(
@@ -155,6 +178,8 @@ internal class DBusMenuHandler : ComCanonicalDbusmenuHandler, ITrayMenuHandler
                     CreateChildVariant(Separator1Id, "", true),
                     CreateChildVariant(SpeechToTextServiceId, $"STT Service: {_sttServiceStatus} (v{_sttServiceVersion})", false),
                     CreateChildVariant(Separator2Id, "", true),
+                    CreateChildVariant(LlmCorrectionId, GetLlmCorrectionLabel(), false),
+                    CreateChildVariant(Separator3Id, "", true),
                     CreateChildVariant(QuitId, "Quit", false)
                 };
             }
@@ -192,6 +217,13 @@ internal class DBusMenuHandler : ComCanonicalDbusmenuHandler, ITrayMenuHandler
         return Struct.Create(id, props, children);
     }
 
+    private string GetLlmCorrectionLabel()
+    {
+        return _llmCorrectionEnabled
+            ? "✅ Vypnout posílání do LLM"
+            : "❌ Zapnout posílání do LLM";
+    }
+
     private (int, Dictionary<string, VariantValue>, VariantValue[]) GetMenuItemLayout(int id)
     {
         var props = new Dictionary<string, VariantValue>();
@@ -213,6 +245,15 @@ internal class DBusMenuHandler : ComCanonicalDbusmenuHandler, ITrayMenuHandler
                 props["visible"] = VariantValue.Bool(true);
                 break;
             case Separator2Id:
+                props["type"] = VariantValue.String("separator");
+                props["visible"] = VariantValue.Bool(true);
+                break;
+            case LlmCorrectionId:
+                props["label"] = VariantValue.String(GetLlmCorrectionLabel());
+                props["enabled"] = VariantValue.Bool(true);
+                props["visible"] = VariantValue.Bool(true);
+                break;
+            case Separator3Id:
                 props["type"] = VariantValue.String("separator");
                 props["visible"] = VariantValue.Bool(true);
                 break;
@@ -264,6 +305,17 @@ internal class DBusMenuHandler : ComCanonicalDbusmenuHandler, ITrayMenuHandler
                 ["visible"] = VariantValue.Bool(true)
             }),
             Separator2Id => (id, new Dictionary<string, VariantValue>
+            {
+                ["type"] = VariantValue.String("separator"),
+                ["visible"] = VariantValue.Bool(true)
+            }),
+            LlmCorrectionId => (id, new Dictionary<string, VariantValue>
+            {
+                ["label"] = VariantValue.String(GetLlmCorrectionLabel()),
+                ["enabled"] = VariantValue.Bool(true),
+                ["visible"] = VariantValue.Bool(true)
+            }),
+            Separator3Id => (id, new Dictionary<string, VariantValue>
             {
                 ["type"] = VariantValue.String("separator"),
                 ["visible"] = VariantValue.Bool(true)
@@ -325,6 +377,14 @@ internal class DBusMenuHandler : ComCanonicalDbusmenuHandler, ITrayMenuHandler
                     {
                         OnStopSpeechToTextRequested?.Invoke();
                     }
+                    break;
+                case LlmCorrectionId:
+                    _logger.LogInformation("LLM Correction menu item clicked (current: {Enabled})", _llmCorrectionEnabled);
+                    // Toggle LLM correction
+                    _llmCorrectionEnabled = !_llmCorrectionEnabled;
+                    OnLlmCorrectionToggled?.Invoke(_llmCorrectionEnabled);
+                    // Update menu to reflect new state
+                    UpdateLlmCorrectionStatus(_llmCorrectionEnabled);
                     break;
             }
         }

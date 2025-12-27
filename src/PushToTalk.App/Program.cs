@@ -184,6 +184,9 @@ try
         // Get state machine for event handling
         var stateMachine = serviceProvider.GetRequiredService<Olbrasoft.PushToTalk.App.StateMachine.IDictationStateMachine>();
 
+        // Get Mistral provider for LLM correction toggle
+        var mistralProvider = serviceProvider.GetRequiredService<Olbrasoft.PushToTalk.Core.Services.MistralProvider>();
+
         // Register all event handlers via EventHandlerRegistry
         var eventRegistry = new EventHandlerRegistry(
             loggerFactory.CreateLogger<EventHandlerRegistry>(),
@@ -192,6 +195,7 @@ try
             trayService,
             hubContext,
             sttServiceManager,
+            mistralProvider,
             version,
             cts);
         eventRegistry.RegisterHandlers();

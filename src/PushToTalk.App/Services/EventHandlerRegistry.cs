@@ -4,6 +4,7 @@ using Olbrasoft.PushToTalk.App.Hubs;
 using Olbrasoft.PushToTalk.App.StateMachine;
 using Olbrasoft.PushToTalk.App.Tray;
 using Olbrasoft.PushToTalk.Core.Extensions;
+using Olbrasoft.PushToTalk.Core.Services;
 
 namespace Olbrasoft.PushToTalk.App.Services;
 
@@ -19,6 +20,7 @@ public class EventHandlerRegistry
     private readonly PushToTalkTrayService _trayService;
     private readonly IHubContext<DictationHub> _hubContext;
     private readonly SpeechToTextServiceManager _sttServiceManager;
+    private readonly MistralProvider _mistralProvider;
     private readonly string _appVersion;
     private readonly CancellationTokenSource _cancellationTokenSource;
 
@@ -29,6 +31,7 @@ public class EventHandlerRegistry
         PushToTalkTrayService trayService,
         IHubContext<DictationHub> hubContext,
         SpeechToTextServiceManager sttServiceManager,
+        MistralProvider mistralProvider,
         string appVersion,
         CancellationTokenSource cancellationTokenSource)
     {
@@ -38,6 +41,7 @@ public class EventHandlerRegistry
         _trayService = trayService;
         _hubContext = hubContext;
         _sttServiceManager = sttServiceManager;
+        _mistralProvider = mistralProvider;
         _appVersion = appVersion;
         _cancellationTokenSource = cancellationTokenSource;
     }
@@ -50,6 +54,7 @@ public class EventHandlerRegistry
         RegisterDictationServiceHandlers();
         RegisterTrayServiceHandlers();
         CheckSpeechToTextServiceStatusOnStartup();
+        InitializeLlmCorrectionStatus();
     }
 
     private void RegisterDictationServiceHandlers()
@@ -173,6 +178,13 @@ public class EventHandlerRegistry
                 _logger.LogError("Failed to start SpeechToText service");
             }
         };
+
+        // Handle LLM correction toggle
+        _trayService.OnLlmCorrectionToggled += (enabled) =>
+        {
+            _logger.LogInformation("LLM correction toggled: {Enabled}", enabled);
+            _mistralProvider.SetEnabled(enabled);
+        };
     }
 
     private void CheckSpeechToTextServiceStatusOnStartup()
@@ -222,5 +234,13 @@ public class EventHandlerRegistry
                 _trayService.SetTooltip("Push To Talk (Service Error)");
             }
         }).FireAndForget(_logger, "SttServiceCheck");
+    }
+
+    private void InitializeLlmCorrectionStatus()
+    {
+        // Initialize LLM correction menu state from MistralProvider
+        var enabled = _mistralProvider.IsEnabled();
+        _logger.LogInformation("Initializing LLM correction status: {Enabled}", enabled);
+        _trayService.UpdateLlmCorrectionStatus(enabled);
     }
 }

@@ -18,6 +18,7 @@ public class MistralProvider : ILlmProvider
     private readonly ILogger<MistralProvider> _logger;
     private readonly string _systemPrompt;
     private Dictionary<string, string> _lastRateLimitHeaders = new();
+    private bool _runtimeEnabled;
 
     public string ProviderName => "mistral";
     public string ModelName => _options.Model;
@@ -37,10 +38,40 @@ public class MistralProvider : ILlmProvider
         _httpClient.Timeout = TimeSpan.FromSeconds(_options.TimeoutSeconds);
 
         _systemPrompt = promptLoader.LoadPrompt("MistralSystemPrompt");
+        _runtimeEnabled = _options.Enabled; // Initialize runtime state from config
     }
+
+    /// <summary>
+    /// Sets the runtime enabled state for LLM correction.
+    /// This allows toggling LLM correction on/off at runtime without changing configuration.
+    /// </summary>
+    public void SetEnabled(bool enabled)
+    {
+        _runtimeEnabled = enabled;
+        _logger.LogInformation("Mistral LLM correction {Status}", enabled ? "enabled" : "disabled");
+    }
+
+    /// <summary>
+    /// Gets the current runtime enabled state.
+    /// </summary>
+    public bool IsEnabled() => _runtimeEnabled;
 
     public async Task<string> CorrectTextAsync(string text, CancellationToken cancellationToken = default)
     {
+        // Skip LLM correction if disabled at runtime
+        if (!_runtimeEnabled)
+        {
+            _logger.LogDebug("Skipping LLM correction - Mistral is disabled (runtime)");
+            return text;
+        }
+
+        // Skip LLM correction if disabled in configuration
+        if (!_options.Enabled)
+        {
+            _logger.LogDebug("Skipping LLM correction - Mistral is disabled (config)");
+            return text;
+        }
+
         // Skip LLM correction for short texts
         if (text.Length < _options.MinTextLengthForCorrection)
         {
