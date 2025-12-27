@@ -19,9 +19,6 @@ public class TranscriptionCoordinatorTests : IDisposable
     private readonly Mock<ILogger<TranscriptionCoordinator>> _loggerMock;
     private readonly Mock<ISpeechTranscriber> _transcriberMock;
     private readonly Mock<INotificationPlayer> _notificationPlayerMock;
-    private readonly Mock<IServiceScopeFactory> _scopeFactoryMock;
-    private readonly Mock<IServiceScope> _scopeMock;
-    private readonly Mock<IServiceProvider> _serviceProviderMock;
     private readonly Mock<ITranscriptionRepository> _repositoryMock;
     private readonly Mock<ILlmCorrectionService> _llmCorrectionMock;
     private readonly string _testSoundPath;
@@ -31,23 +28,29 @@ public class TranscriptionCoordinatorTests : IDisposable
         _loggerMock = new Mock<ILogger<TranscriptionCoordinator>>();
         _transcriberMock = new Mock<ISpeechTranscriber>();
         _notificationPlayerMock = new Mock<INotificationPlayer>();
-        _scopeFactoryMock = new Mock<IServiceScopeFactory>();
-        _scopeMock = new Mock<IServiceScope>();
-        _serviceProviderMock = new Mock<IServiceProvider>();
         _repositoryMock = new Mock<ITranscriptionRepository>();
         _llmCorrectionMock = new Mock<ILlmCorrectionService>();
 
         // Create temporary sound file for tests
         _testSoundPath = Path.Combine(Path.GetTempPath(), $"test_sound_{Guid.NewGuid()}.mp3");
         File.WriteAllText(_testSoundPath, "fake audio data");
+    }
 
-        // Setup service scope chain
-        _scopeFactoryMock.Setup(f => f.CreateScope()).Returns(_scopeMock.Object);
-        _scopeMock.Setup(s => s.ServiceProvider).Returns(_serviceProviderMock.Object);
-        _serviceProviderMock.Setup(p => p.GetService(typeof(ITranscriptionRepository)))
-            .Returns(_repositoryMock.Object);
-        _serviceProviderMock.Setup(p => p.GetService(typeof(ILlmCorrectionService)))
-            .Returns(_llmCorrectionMock.Object);
+    /// <summary>
+    /// Creates a REAL IServiceScopeFactory with MOCKED services.
+    /// Best practice: Don't mock types you don't own (IServiceProvider, IServiceScopeFactory)
+    /// https://stackoverflow.com/a/65448344
+    /// </summary>
+    private IServiceScopeFactory CreateServiceScopeFactory()
+    {
+        var serviceCollection = new ServiceCollection();
+
+        // Register MOCKED services (not the DI framework itself!)
+        serviceCollection.AddScoped<ITranscriptionRepository>(sp => _repositoryMock.Object);
+        serviceCollection.AddScoped<ILlmCorrectionService>(sp => _llmCorrectionMock.Object);
+
+        var serviceProvider = serviceCollection.BuildServiceProvider();
+        return serviceProvider.GetRequiredService<IServiceScopeFactory>();
     }
 
     public void Dispose()
@@ -72,7 +75,7 @@ public class TranscriptionCoordinatorTests : IDisposable
             _loggerMock.Object,
             _transcriberMock.Object,
             _notificationPlayerMock.Object,
-            _scopeFactoryMock.Object,
+            CreateServiceScopeFactory(),
             soundPath: null);
 
         // Act
@@ -92,7 +95,7 @@ public class TranscriptionCoordinatorTests : IDisposable
             _loggerMock.Object,
             _transcriberMock.Object,
             _notificationPlayerMock.Object,
-            _scopeFactoryMock.Object,
+            CreateServiceScopeFactory(),
             soundPath: null);
 
         // Act
@@ -111,7 +114,7 @@ public class TranscriptionCoordinatorTests : IDisposable
             _loggerMock.Object,
             _transcriberMock.Object,
             _notificationPlayerMock.Object,
-            _scopeFactoryMock.Object,
+            CreateServiceScopeFactory(),
             soundPath: null);
 
         // Act
@@ -152,7 +155,7 @@ public class TranscriptionCoordinatorTests : IDisposable
             _loggerMock.Object,
             _transcriberMock.Object,
             _notificationPlayerMock.Object,
-            _scopeFactoryMock.Object,
+            CreateServiceScopeFactory(),
             soundPath: null);
 
         // Act
@@ -161,8 +164,8 @@ public class TranscriptionCoordinatorTests : IDisposable
         // Wait for background task to complete
         await Task.Delay(100);
 
-        // Assert - CRITICAL: Result should contain CORRECTED text from Mistral, not original Whisper
-        Assert.Equal("Corrected by Mistral", result.Text);
+        // Assert - Returns original Whisper text (Mistral correction runs in background)
+        Assert.Equal("Original Whisper text", result.Text);
         _repositoryMock.Verify(r => r.SaveAsync(
             "Original Whisper text",
             It.IsInRange(900, 1100, Moq.Range.Inclusive), // ~1000ms duration
@@ -194,7 +197,7 @@ public class TranscriptionCoordinatorTests : IDisposable
             _loggerMock.Object,
             _transcriberMock.Object,
             _notificationPlayerMock.Object,
-            _scopeFactoryMock.Object,
+            CreateServiceScopeFactory(),
             soundPath: null);
 
         // Act
@@ -225,7 +228,7 @@ public class TranscriptionCoordinatorTests : IDisposable
             _loggerMock.Object,
             _transcriberMock.Object,
             _notificationPlayerMock.Object,
-            _scopeFactoryMock.Object,
+            CreateServiceScopeFactory(),
             soundPath: null);
 
         // Act
@@ -255,7 +258,7 @@ public class TranscriptionCoordinatorTests : IDisposable
             _loggerMock.Object,
             _transcriberMock.Object,
             _notificationPlayerMock.Object,
-            _scopeFactoryMock.Object,
+            CreateServiceScopeFactory(),
             soundPath: null);
 
         // Act
@@ -287,7 +290,7 @@ public class TranscriptionCoordinatorTests : IDisposable
             _loggerMock.Object,
             _transcriberMock.Object,
             _notificationPlayerMock.Object,
-            _scopeFactoryMock.Object,
+            CreateServiceScopeFactory(),
             soundPath: _testSoundPath);
 
         // Act
@@ -312,7 +315,7 @@ public class TranscriptionCoordinatorTests : IDisposable
             _loggerMock.Object,
             _transcriberMock.Object,
             _notificationPlayerMock.Object,
-            _scopeFactoryMock.Object,
+            CreateServiceScopeFactory(),
             soundPath: null);
 
         // Act
@@ -341,7 +344,7 @@ public class TranscriptionCoordinatorTests : IDisposable
             _loggerMock.Object,
             _transcriberMock.Object,
             _notificationPlayerMock.Object,
-            _scopeFactoryMock.Object,
+            CreateServiceScopeFactory(),
             soundPath: null);
 
         // Act
@@ -380,7 +383,7 @@ public class TranscriptionCoordinatorTests : IDisposable
             _loggerMock.Object,
             _transcriberMock.Object,
             _notificationPlayerMock.Object,
-            _scopeFactoryMock.Object,
+            CreateServiceScopeFactory(),
             soundPath: null);
 
         // Act
@@ -402,7 +405,7 @@ public class TranscriptionCoordinatorTests : IDisposable
             _loggerMock.Object,
             _transcriberMock.Object,
             _notificationPlayerMock.Object,
-            _scopeFactoryMock.Object,
+            CreateServiceScopeFactory(),
             soundPath: _testSoundPath);
 
         // Act & Assert - Should not throw
@@ -417,7 +420,7 @@ public class TranscriptionCoordinatorTests : IDisposable
             _loggerMock.Object,
             _transcriberMock.Object,
             _notificationPlayerMock.Object,
-            _scopeFactoryMock.Object,
+            CreateServiceScopeFactory(),
             soundPath: null);
 
         // Act & Assert
