@@ -236,4 +236,58 @@ public class DatabaseIntegrationTests : IAsyncLifetime
         // Assert - Should return correction from the most recent transcription
         Assert.Equal("LATEST TRANSCRIPTION CORRECTED", latestText);
     }
+
+    [SkipOnCIFact]
+    public async Task CorrectTranscriptionAsync_ReturnValue_ShouldMatchDatabaseValue()
+    {
+        // CRITICAL TEST: Verify that what user receives (return value)
+        // is EXACTLY what's stored in database (via GetLatestCorrectedTextAsync)
+
+        // Arrange - Create mock LLM provider and service
+        var mockLlmProvider = new Mock<Olbrasoft.PushToTalk.Core.Interfaces.ILlmProvider>();
+        var mockEmailService = new Mock<Olbrasoft.PushToTalk.Core.Interfaces.IEmailNotificationService>();
+        var mockNotificationClient = new Mock<Olbrasoft.PushToTalk.Core.Interfaces.INotificationClient>();
+        var mockLogger = new Mock<ILogger<Olbrasoft.PushToTalk.Service.Services.LlmCorrectionService>>();
+
+        var mistralCorrectedText = "This is the EXACT text that Mistral returned and should be in database";
+
+        mockLlmProvider
+            .Setup(p => p.CorrectTextAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(mistralCorrectedText);
+
+        var llmService = new Olbrasoft.PushToTalk.Service.Services.LlmCorrectionService(
+            mockLlmProvider.Object,
+            _context,
+            mockEmailService.Object,
+            mockNotificationClient.Object,
+            mockLogger.Object);
+
+        // Save Whisper transcription first
+        var whisperText = "This is original whisper text that needs correction";
+        var transcription = await _repository.SaveAsync(whisperText, 1500);
+
+        // Act - Call LLM correction service (simulates what TranscriptionCoordinator does)
+        var returnedText = await llmService.CorrectTranscriptionAsync(
+            transcription.Id,
+            whisperText,
+            CancellationToken.None);
+
+        // Read from database using repository method (what we use to retrieve text later)
+        var databaseText = await _repository.GetLatestCorrectedTextAsync();
+
+        // Assert - CRITICAL: Return value MUST equal database value
+        Assert.Equal(mistralCorrectedText, returnedText);
+        Assert.Equal(mistralCorrectedText, databaseText);
+        Assert.Equal(returnedText, databaseText); // What user gets = what's in DB
+
+        // Verify LLM service logged success
+        mockLogger.Verify(
+            l => l.Log(
+                LogLevel.Information,
+                It.IsAny<EventId>(),
+                It.Is<It.IsAnyType>((v, t) => v.ToString()!.Contains("LLM correction succeeded")),
+                It.IsAny<Exception>(),
+                It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
+            Times.Once);
+    }
 }
