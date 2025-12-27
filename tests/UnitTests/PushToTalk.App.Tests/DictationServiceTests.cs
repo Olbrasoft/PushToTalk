@@ -1,7 +1,9 @@
 using Microsoft.Extensions.Logging;
 using Moq;
 using Olbrasoft.PushToTalk.App;
+using Olbrasoft.PushToTalk.App.Keyboard;
 using Olbrasoft.PushToTalk.App.Services;
+using Olbrasoft.PushToTalk.App.StateMachine;
 using Olbrasoft.PushToTalk.Core.Interfaces;
 using Olbrasoft.PushToTalk.Core.Models;
 
@@ -10,8 +12,9 @@ namespace Olbrasoft.PushToTalk.App.Tests;
 public class DictationServiceTests : IDisposable
 {
     private readonly Mock<ILogger<DictationService>> _loggerMock;
+    private readonly Mock<IDictationStateMachine> _stateMachineMock;
+    private readonly Mock<ICapsLockSynchronizer> _capsLockSynchronizerMock;
     private readonly Mock<IKeyboardMonitor> _keyboardMonitorMock;
-    private readonly Mock<IKeySimulator> _keySimulatorMock;
     private readonly Mock<IAudioRecorder> _audioRecorderMock;
     private readonly Mock<ITranscriptionCoordinator> _transcriptionCoordinatorMock;
     private readonly Mock<ITextOutputHandler> _textOutputHandlerMock;
@@ -20,19 +23,25 @@ public class DictationServiceTests : IDisposable
     public DictationServiceTests()
     {
         _loggerMock = new Mock<ILogger<DictationService>>();
+        _stateMachineMock = new Mock<IDictationStateMachine>();
+        _capsLockSynchronizerMock = new Mock<ICapsLockSynchronizer>();
         _keyboardMonitorMock = new Mock<IKeyboardMonitor>();
-        _keySimulatorMock = new Mock<IKeySimulator>();
         _audioRecorderMock = new Mock<IAudioRecorder>();
         _transcriptionCoordinatorMock = new Mock<ITranscriptionCoordinator>();
         _textOutputHandlerMock = new Mock<ITextOutputHandler>();
 
-        // Setup default: CapsLock LED is always OFF (so synchronization won't trigger)
-        _keyboardMonitorMock.Setup(k => k.IsCapsLockOn()).Returns(false);
+        // Setup default state machine behavior
+        _stateMachineMock.Setup(s => s.CurrentState).Returns(DictationState.Idle);
+        _stateMachineMock.Setup(s => s.CanTransitionTo(It.IsAny<DictationState>())).Returns(true);
+
+        // Setup default: CapsLock synchronizer not synchronizing
+        _capsLockSynchronizerMock.Setup(c => c.IsSynchronizing).Returns(false);
 
         _service = new DictationService(
             _loggerMock.Object,
+            _stateMachineMock.Object,
+            _capsLockSynchronizerMock.Object,
             _keyboardMonitorMock.Object,
-            _keySimulatorMock.Object,
             _audioRecorderMock.Object,
             _transcriptionCoordinatorMock.Object,
             _textOutputHandlerMock.Object);
@@ -54,9 +63,6 @@ public class DictationServiceTests : IDisposable
     public async Task StartDictationAsync_WhenIdle_ShouldStartRecording()
     {
         // Arrange
-        var stateChanges = new List<DictationState>();
-        _service.StateChanged += (_, state) => stateChanges.Add(state);
-
         _audioRecorderMock.Setup(r => r.StartRecordingAsync(It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
 
@@ -64,23 +70,30 @@ public class DictationServiceTests : IDisposable
         await _service.StartDictationAsync();
 
         // Assert
-        Assert.Equal(DictationState.Recording, _service.State);
-        Assert.Contains(DictationState.Recording, stateChanges);
+        _stateMachineMock.Verify(s => s.CanTransitionTo(DictationState.Recording), Times.Once);
+        _stateMachineMock.Verify(s => s.TransitionTo(DictationState.Recording), Times.Once);
         _audioRecorderMock.Verify(r => r.StartRecordingAsync(It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
     public async Task StartDictationAsync_WhenNotIdle_ShouldNotStartRecording()
     {
-        // Arrange - start first dictation
+        // Arrange - first call succeeds, second fails
+        _stateMachineMock.SetupSequence(s => s.CanTransitionTo(DictationState.Recording))
+            .Returns(true)   // First call: can transition
+            .Returns(false); // Second call: cannot transition (already recording)
+
         _audioRecorderMock.Setup(r => r.StartRecordingAsync(It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
+
         await _service.StartDictationAsync();
 
         // Act - try to start again while recording
         await _service.StartDictationAsync();
 
         // Assert
+        _stateMachineMock.Verify(s => s.CanTransitionTo(DictationState.Recording), Times.Exactly(2));
+        _stateMachineMock.Verify(s => s.TransitionTo(DictationState.Recording), Times.Once);
         _audioRecorderMock.Verify(r => r.StartRecordingAsync(It.IsAny<CancellationToken>()), Times.Once);
     }
 
@@ -207,35 +220,35 @@ public class DictationServiceTests : IDisposable
     }
 
     [Fact]
-    public async Task StateChanged_ShouldBeRaised_WhenStateChanges()
+    public async Task StateTransitions_ShouldUseStateMachine_WhenCalled()
     {
         // Arrange
-        var stateChanges = new List<DictationState>();
-        _service.StateChanged += (_, state) => stateChanges.Add(state);
+        _stateMachineMock.SetupSequence(s => s.CanTransitionTo(It.IsAny<DictationState>()))
+            .Returns(true)  // StartDictation: Idle -> Recording
+            .Returns(true); // StopDictation: Recording -> Transcribing
 
         _audioRecorderMock.Setup(r => r.StartRecordingAsync(It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
         _audioRecorderMock.Setup(r => r.StopRecordingAsync())
             .Returns(Task.CompletedTask);
         _audioRecorderMock.Setup(r => r.GetRecordedData())
-            .Returns(Array.Empty<byte>());
+            .Returns(Array.Empty<byte>()); // Empty audio - goes directly to Idle (no transcription)
 
         // Act
         await _service.StartDictationAsync();
         await _service.StopDictationAsync();
 
         // Assert
-        Assert.Contains(DictationState.Recording, stateChanges);
-        Assert.Contains(DictationState.Idle, stateChanges);
+        _stateMachineMock.Verify(s => s.TransitionTo(DictationState.Recording), Times.Once);
+        _stateMachineMock.Verify(s => s.TransitionTo(DictationState.Transcribing), Times.Once);
+        // Idle is called twice: once when audio is empty, once in finally
+        _stateMachineMock.Verify(s => s.TransitionTo(DictationState.Idle), Times.Exactly(2));
     }
 
     [Fact]
     public async Task StopDictationAsync_WithTranscription_ShouldGoThroughTranscribingState()
     {
         // Arrange
-        var stateChanges = new List<DictationState>();
-        _service.StateChanged += (_, state) => stateChanges.Add(state);
-
         var audioData = new byte[] { 1, 2, 3 };
         var transcriptionResult = new TranscriptionResult("Test", 1.0f);
 
@@ -256,7 +269,8 @@ public class DictationServiceTests : IDisposable
         await _service.StopDictationAsync();
 
         // Assert
-        Assert.Contains(DictationState.Transcribing, stateChanges);
+        _stateMachineMock.Verify(s => s.TransitionTo(DictationState.Transcribing), Times.Once);
+        _stateMachineMock.Verify(s => s.TransitionTo(DictationState.Idle), Times.Once);
     }
 
     [Fact]

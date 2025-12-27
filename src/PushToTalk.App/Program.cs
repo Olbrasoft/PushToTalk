@@ -181,10 +181,14 @@ try
     {
         Console.WriteLine("D-Bus tray icon initialized");
 
+        // Get state machine for event handling
+        var stateMachine = serviceProvider.GetRequiredService<Olbrasoft.PushToTalk.App.StateMachine.IDictationStateMachine>();
+
         // Register all event handlers via EventHandlerRegistry
         var eventRegistry = new EventHandlerRegistry(
             loggerFactory.CreateLogger<EventHandlerRegistry>(),
             dictationService,
+            stateMachine,
             trayService,
             hubContext,
             sttServiceManager,

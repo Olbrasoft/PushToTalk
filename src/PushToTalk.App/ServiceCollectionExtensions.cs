@@ -144,8 +144,9 @@ public static class ServiceCollectionExtensions
         services.AddSingleton(sp =>
         {
             var logger = sp.GetRequiredService<ILogger<DictationService>>();
+            var stateMachine = sp.GetRequiredService<Olbrasoft.PushToTalk.App.StateMachine.IDictationStateMachine>();
+            var capsLockSynchronizer = sp.GetRequiredService<Olbrasoft.PushToTalk.App.Keyboard.ICapsLockSynchronizer>();
             var keyboardMonitor = sp.GetRequiredService<IKeyboardMonitor>();
-            var keySimulator = sp.GetRequiredService<IKeySimulator>();
             var audioRecorder = sp.GetRequiredService<IAudioRecorder>();
             var transcriptionCoordinator = sp.GetRequiredService<ITranscriptionCoordinator>();
             var textOutputHandler = sp.GetRequiredService<ITextOutputHandler>();
@@ -155,8 +156,9 @@ public static class ServiceCollectionExtensions
 
             return new DictationService(
                 logger,
+                stateMachine,
+                capsLockSynchronizer,
                 keyboardMonitor,
-                keySimulator,
                 audioRecorder,
                 transcriptionCoordinator,
                 textOutputHandler,

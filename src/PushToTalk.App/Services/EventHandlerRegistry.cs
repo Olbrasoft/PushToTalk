@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Logging;
 using Olbrasoft.PushToTalk.App.Hubs;
+using Olbrasoft.PushToTalk.App.StateMachine;
 using Olbrasoft.PushToTalk.App.Tray;
 using Olbrasoft.PushToTalk.Core.Extensions;
 
@@ -14,6 +15,7 @@ public class EventHandlerRegistry
 {
     private readonly ILogger<EventHandlerRegistry> _logger;
     private readonly DictationService _dictationService;
+    private readonly IDictationStateMachine _stateMachine;
     private readonly PushToTalkTrayService _trayService;
     private readonly IHubContext<DictationHub> _hubContext;
     private readonly SpeechToTextServiceManager _sttServiceManager;
@@ -23,6 +25,7 @@ public class EventHandlerRegistry
     public EventHandlerRegistry(
         ILogger<EventHandlerRegistry> logger,
         DictationService dictationService,
+        IDictationStateMachine stateMachine,
         PushToTalkTrayService trayService,
         IHubContext<DictationHub> hubContext,
         SpeechToTextServiceManager sttServiceManager,
@@ -31,6 +34,7 @@ public class EventHandlerRegistry
     {
         _logger = logger;
         _dictationService = dictationService;
+        _stateMachine = stateMachine;
         _trayService = trayService;
         _hubContext = hubContext;
         _sttServiceManager = sttServiceManager;
@@ -50,9 +54,9 @@ public class EventHandlerRegistry
 
     private void RegisterDictationServiceHandlers()
     {
-        // Handle state changes from DictationService
+        // Handle state changes from state machine
         // Main icon stays visible, animated icon shows NEXT TO it during transcription (issue #62)
-        _dictationService.StateChanged += async (_, state) =>
+        _stateMachine.StateChanged += async (_, state) =>
         {
             // Update tray icon
             switch (state)

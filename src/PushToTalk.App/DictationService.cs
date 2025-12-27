@@ -1,6 +1,8 @@
 using Microsoft.Extensions.Logging;
 using Olbrasoft.NotificationAudio.Abstractions;
+using Olbrasoft.PushToTalk.App.Keyboard;
 using Olbrasoft.PushToTalk.App.Services;
+using Olbrasoft.PushToTalk.App.StateMachine;
 using Olbrasoft.PushToTalk.Audio;
 using Olbrasoft.PushToTalk.Core.Extensions;
 using Olbrasoft.PushToTalk.Core.Interfaces;
@@ -19,14 +21,21 @@ public enum DictationState
 
 /// <summary>
 /// Orchestrates the dictation workflow: recording, transcription, and text output.
-/// Refactored to use ITranscriptionCoordinator and ITextOutputHandler for SRP compliance.
 /// </summary>
+/// <remarks>
+/// Refactored to use extracted services for SRP compliance:
+/// - IDictationStateMachine: State management and transitions
+/// - ICapsLockSynchronizer: CapsLock LED synchronization
+/// - ITranscriptionCoordinator: Transcription with feedback
+/// - ITextOutputHandler: Text output to active window
+/// </remarks>
 public class DictationService : IDisposable, IAsyncDisposable
 {
     private bool _disposed;
     private readonly ILogger<DictationService> _logger;
+    private readonly IDictationStateMachine _stateMachine;
+    private readonly ICapsLockSynchronizer _capsLockSynchronizer;
     private readonly IKeyboardMonitor _keyboardMonitor;
-    private readonly IKeySimulator _keySimulator;
     private readonly IAudioRecorder _audioRecorder;
     private readonly ITranscriptionCoordinator _transcriptionCoordinator;
     private readonly ITextOutputHandler _textOutputHandler;
@@ -37,16 +46,8 @@ public class DictationService : IDisposable, IAsyncDisposable
     private readonly KeyCode _cancelKey;
     private Func<Task<bool>>? _serviceAvailabilityCheck;
 
-    private DictationState _state = DictationState.Idle;
-    private readonly object _stateLock = new();
     private CancellationTokenSource? _cts;
     private CancellationTokenSource? _transcriptionCts;
-    private bool _synchronizingCapsLock;
-
-    /// <summary>
-    /// Event raised when dictation state changes.
-    /// </summary>
-    public event EventHandler<DictationState>? StateChanged;
 
     /// <summary>
     /// Event raised when transcription completes with the transcribed text.
@@ -56,12 +57,13 @@ public class DictationService : IDisposable, IAsyncDisposable
     /// <summary>
     /// Gets the current dictation state.
     /// </summary>
-    public DictationState State => _state;
+    public DictationState State => _stateMachine.CurrentState;
 
     public DictationService(
         ILogger<DictationService> logger,
+        IDictationStateMachine stateMachine,
+        ICapsLockSynchronizer capsLockSynchronizer,
         IKeyboardMonitor keyboardMonitor,
-        IKeySimulator keySimulator,
         IAudioRecorder audioRecorder,
         ITranscriptionCoordinator transcriptionCoordinator,
         ITextOutputHandler textOutputHandler,
@@ -72,8 +74,9 @@ public class DictationService : IDisposable, IAsyncDisposable
         KeyCode cancelKey = KeyCode.Escape)
     {
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        _stateMachine = stateMachine ?? throw new ArgumentNullException(nameof(stateMachine));
+        _capsLockSynchronizer = capsLockSynchronizer ?? throw new ArgumentNullException(nameof(capsLockSynchronizer));
         _keyboardMonitor = keyboardMonitor ?? throw new ArgumentNullException(nameof(keyboardMonitor));
-        _keySimulator = keySimulator ?? throw new ArgumentNullException(nameof(keySimulator));
         _audioRecorder = audioRecorder ?? throw new ArgumentNullException(nameof(audioRecorder));
         _transcriptionCoordinator = transcriptionCoordinator ?? throw new ArgumentNullException(nameof(transcriptionCoordinator));
         _textOutputHandler = textOutputHandler ?? throw new ArgumentNullException(nameof(textOutputHandler));
@@ -117,8 +120,10 @@ public class DictationService : IDisposable, IAsyncDisposable
 
     private void OnKeyReleased(object? sender, KeyEventArgs e)
     {
+        var currentState = _stateMachine.CurrentState;
+
         // Handle cancel key during transcription
-        if (e.Key == _cancelKey && _state == DictationState.Transcribing)
+        if (e.Key == _cancelKey && currentState == DictationState.Transcribing)
         {
             _logger.LogInformation("{CancelKey} pressed - cancelling transcription", _cancelKey);
             CancelTranscription();
@@ -129,7 +134,7 @@ public class DictationService : IDisposable, IAsyncDisposable
             return;
 
         // Ignore CapsLock events during LED synchronization (web remote control)
-        if (_synchronizingCapsLock)
+        if (_capsLockSynchronizer.IsSynchronizing)
         {
             _logger.LogDebug("Ignoring {TriggerKey} event during LED synchronization", _triggerKey);
             return;
@@ -139,10 +144,10 @@ public class DictationService : IDisposable, IAsyncDisposable
         // This prevents desynchronization when CapsLock is toggled while app is not in expected state
         var capsLockOn = _keyboardMonitor.IsCapsLockOn();
         _logger.LogDebug("{TriggerKey} released, CapsLock LED: {CapsLockOn}, current state: {State}",
-            _triggerKey, capsLockOn, _state);
+            _triggerKey, capsLockOn, currentState);
 
         // CapsLock ON + Idle → start recording (check service availability first)
-        if (capsLockOn && _state == DictationState.Idle)
+        if (capsLockOn && currentState == DictationState.Idle)
         {
             _logger.LogInformation("{TriggerKey} pressed, CapsLock ON - checking service availability", _triggerKey);
             Task.Run(async () =>
@@ -162,13 +167,13 @@ public class DictationService : IDisposable, IAsyncDisposable
             }).FireAndForget(_logger, "StartDictation");
         }
         // CapsLock OFF + Recording → stop recording and transcribe
-        else if (!capsLockOn && _state == DictationState.Recording)
+        else if (!capsLockOn && currentState == DictationState.Recording)
         {
             _logger.LogInformation("{TriggerKey} pressed, CapsLock OFF - stopping dictation", _triggerKey);
             Task.Run(() => StopDictationAsync()).FireAndForget(_logger, "StopDictation");
         }
         // CapsLock ON + Recording → user toggled again, stop (emergency stop)
-        else if (capsLockOn && _state == DictationState.Recording)
+        else if (capsLockOn && currentState == DictationState.Recording)
         {
             _logger.LogWarning("CapsLock toggled ON while recording - emergency stop");
             Task.Run(() => StopDictationAsync()).FireAndForget(_logger, "StopDictation");
@@ -182,7 +187,7 @@ public class DictationService : IDisposable, IAsyncDisposable
     public void CancelTranscription()
     {
         _logger.LogInformation("CancelTranscription called, state: {State}, has CTS: {HasCts}",
-            _state, _transcriptionCts != null);
+            _stateMachine.CurrentState, _transcriptionCts != null);
 
         // Always try to cancel, regardless of state (race condition protection)
         if (_transcriptionCts != null && !_transcriptionCts.IsCancellationRequested)
@@ -197,37 +202,19 @@ public class DictationService : IDisposable, IAsyncDisposable
     /// </summary>
     public async Task StartDictationAsync()
     {
-        lock (_stateLock)
+        // Check and transition state
+        if (!_stateMachine.CanTransitionTo(DictationState.Recording))
         {
-            if (_state != DictationState.Idle)
-            {
-                _logger.LogWarning("Cannot start dictation, current state: {State}", _state);
-                return;
-            }
-
-            SetState(DictationState.Recording);
+            _logger.LogWarning("Cannot start dictation, current state: {State}", _stateMachine.CurrentState);
+            return;
         }
+
+        _stateMachine.TransitionTo(DictationState.Recording);
 
         try
         {
             // Synchronize CapsLock LED (for web remote control)
-            // If CapsLock is OFF, simulate key press to turn it ON
-            var capsLockOn = _keyboardMonitor.IsCapsLockOn();
-            if (!capsLockOn)
-            {
-                _logger.LogInformation("CapsLock LED is OFF, synchronizing by simulating key press");
-                _synchronizingCapsLock = true;
-                try
-                {
-                    await _keySimulator.SimulateKeyPressAsync(_triggerKey);
-                    // Wait for LED state to update
-                    await Task.Delay(100);
-                }
-                finally
-                {
-                    _synchronizingCapsLock = false;
-                }
-            }
+            await _capsLockSynchronizer.SynchronizeLedAsync(shouldBeOn: true);
 
             // Play recording start notification sound (fire-and-forget)
             if (_notificationPlayer != null && !string.IsNullOrWhiteSpace(_recordingStartSoundPath))
@@ -249,17 +236,17 @@ public class DictationService : IDisposable, IAsyncDisposable
             var recordingTask = _audioRecorder.StartRecordingAsync(_cts.Token);
             _ = recordingTask.ContinueWith(t =>
             {
-                if (t.IsFaulted && _state == DictationState.Recording)
+                if (t.IsFaulted && _stateMachine.CurrentState == DictationState.Recording)
                 {
                     _logger.LogError(t.Exception, "Recording failed");
-                    SetState(DictationState.Idle);
+                    _stateMachine.TransitionTo(DictationState.Idle);
                 }
             }, TaskContinuationOptions.OnlyOnFaulted);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to start recording");
-            SetState(DictationState.Idle);
+            _stateMachine.TransitionTo(DictationState.Idle);
         }
     }
 
@@ -268,19 +255,18 @@ public class DictationService : IDisposable, IAsyncDisposable
     /// </summary>
     public async Task StopDictationAsync()
     {
-        // Check and transition state atomically
-        lock (_stateLock)
+        // Check and transition state
+        if (!_stateMachine.CanTransitionTo(DictationState.Transcribing))
         {
-            if (_state != DictationState.Recording)
-            {
-                _logger.LogWarning("Cannot stop dictation, current state: {State}", _state);
-                return;
-            }
-            // Create cancellation token BEFORE changing state - so it's available immediately for cancel requests
-            _transcriptionCts = new CancellationTokenSource();
-            // Mark as transcribing immediately to prevent concurrent calls
-            SetState(DictationState.Transcribing);
+            _logger.LogWarning("Cannot stop dictation, current state: {State}", _stateMachine.CurrentState);
+            return;
         }
+
+        // Create cancellation token BEFORE changing state - so it's available immediately for cancel requests
+        _transcriptionCts = new CancellationTokenSource();
+
+        // Mark as transcribing immediately to prevent concurrent calls
+        _stateMachine.TransitionTo(DictationState.Transcribing);
 
         try
         {
@@ -288,26 +274,10 @@ public class DictationService : IDisposable, IAsyncDisposable
             await _audioRecorder.StopRecordingAsync();
 
             // Synchronize CapsLock LED IMMEDIATELY after stopping recording (for web remote control)
-            // If CapsLock is ON, simulate key press to turn it OFF
             // This MUST happen before transcription starts, not after!
             try
             {
-                var capsLockOn = _keyboardMonitor.IsCapsLockOn();
-                if (capsLockOn)
-                {
-                    _logger.LogInformation("CapsLock LED is ON, synchronizing by simulating key press (before transcription)");
-                    _synchronizingCapsLock = true;
-                    try
-                    {
-                        await _keySimulator.SimulateKeyPressAsync(_triggerKey);
-                        // Wait for LED state to update
-                        await Task.Delay(100);
-                    }
-                    finally
-                    {
-                        _synchronizingCapsLock = false;
-                    }
-                }
+                await _capsLockSynchronizer.SynchronizeLedAsync(shouldBeOn: false);
             }
             catch (Exception ex)
             {
@@ -327,7 +297,7 @@ public class DictationService : IDisposable, IAsyncDisposable
             if (audioData.Length == 0)
             {
                 _logger.LogWarning("No audio data recorded");
-                SetState(DictationState.Idle);
+                _stateMachine.TransitionTo(DictationState.Idle);
                 return;
             }
 
@@ -376,18 +346,8 @@ public class DictationService : IDisposable, IAsyncDisposable
             _transcriptionCts = null;
             _cts?.Dispose();
             _cts = null;
-            SetState(DictationState.Idle);
+            _stateMachine.TransitionTo(DictationState.Idle);
         }
-    }
-
-    private void SetState(DictationState newState)
-    {
-        if (_state == newState)
-            return;
-
-        _state = newState;
-        _logger.LogDebug("State changed to: {State}", _state);
-        StateChanged?.Invoke(this, _state);
     }
 
     public void Dispose()
