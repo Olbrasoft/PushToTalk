@@ -219,8 +219,11 @@ public static class ServiceCollectionExtensions
         // Prompt loader for LLM system prompts
         services.AddSingleton<Core.Interfaces.IPromptLoader, Core.Services.EmbeddedPromptLoader>();
 
-        // HTTP client for MistralProvider
-        services.AddHttpClient<ILlmProvider, Core.Services.MistralProvider>();
+        // HTTP client for MistralProvider (register as concrete type first)
+        services.AddHttpClient<Core.Services.MistralProvider>();
+
+        // Register MistralProvider as ILlmProvider (same instance)
+        services.AddSingleton<ILlmProvider>(sp => sp.GetRequiredService<Core.Services.MistralProvider>());
 
         // HTTP client for NotificationClient (VirtualAssistant)
         services.AddHttpClient<INotificationClient, Service.Services.NotificationClient>();
