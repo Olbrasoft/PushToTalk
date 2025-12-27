@@ -16,7 +16,7 @@ public class MistralProvider : ILlmProvider
     private readonly HttpClient _httpClient;
     private readonly MistralOptions _options;
     private readonly ILogger<MistralProvider> _logger;
-    private readonly string _systemPrompt;
+    private readonly IPromptCache _promptCache;
     private Dictionary<string, string> _lastRateLimitHeaders = new();
     private bool _runtimeEnabled;
 
@@ -26,19 +26,27 @@ public class MistralProvider : ILlmProvider
     public MistralProvider(
         HttpClient httpClient,
         IOptions<MistralOptions> options,
-        IPromptLoader promptLoader,
+        IPromptCache promptCache,
         ILogger<MistralProvider> logger)
     {
         _httpClient = httpClient;
         _options = options.Value;
         _logger = logger;
+        _promptCache = promptCache ?? throw new ArgumentNullException(nameof(promptCache));
 
         _httpClient.BaseAddress = new Uri(_options.BaseUrl);
         _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _options.ApiKey);
         _httpClient.Timeout = TimeSpan.FromSeconds(_options.TimeoutSeconds);
 
-        _systemPrompt = promptLoader.LoadPrompt("MistralSystemPrompt");
         _runtimeEnabled = _options.Enabled; // Initialize runtime state from config
+    }
+
+    /// <summary>
+    /// Gets the system prompt for Mistral from cache or loads it if not cached.
+    /// </summary>
+    private string GetSystemPrompt()
+    {
+        return _promptCache.GetPrompt("MistralSystemPrompt");
     }
 
     /// <summary>
@@ -55,6 +63,16 @@ public class MistralProvider : ILlmProvider
     /// Gets the current runtime enabled state.
     /// </summary>
     public bool IsEnabled() => _runtimeEnabled;
+
+    /// <summary>
+    /// Reloads the Mistral system prompt by clearing the cache.
+    /// The prompt will be reloaded from file (or embedded resource as fallback) on next API call.
+    /// </summary>
+    public void ReloadPrompt()
+    {
+        _promptCache.ClearPrompt("MistralSystemPrompt");
+        _logger.LogInformation("Mistral prompt cache cleared, will reload on next request");
+    }
 
     public async Task<string> CorrectTextAsync(string text, CancellationToken cancellationToken = default)
     {
@@ -87,7 +105,7 @@ public class MistralProvider : ILlmProvider
                 model = _options.Model,
                 messages = new[]
                 {
-                    new { role = "system", content = _systemPrompt },
+                    new { role = "system", content = GetSystemPrompt() },
                     new { role = "user", content = text }
                 },
                 temperature = _options.Temperature,

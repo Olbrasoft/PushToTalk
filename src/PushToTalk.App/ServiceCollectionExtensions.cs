@@ -218,17 +218,29 @@ public static class ServiceCollectionExtensions
         services.Configure<Core.Configuration.ServiceEndpoints>(
             configuration.GetSection(Core.Configuration.ServiceEndpoints.SectionName));
 
-        // Prompt loader for LLM system prompts
-        services.AddSingleton<Core.Interfaces.IPromptLoader, Core.Services.EmbeddedPromptLoader>();
+        // Embedded prompt loader (fallback)
+        services.AddSingleton<Core.Services.EmbeddedPromptLoader>();
+
+        // Hybrid prompt loader (file-first, embedded fallback)
+        services.AddSingleton<Core.Interfaces.IPromptLoader>(sp =>
+        {
+            var fileBasePath = "/opt/olbrasoft/push-to-talk/prompts";
+            var embeddedFallback = sp.GetRequiredService<Core.Services.EmbeddedPromptLoader>();
+            var logger = sp.GetRequiredService<ILogger<Core.Services.HybridPromptLoader>>();
+            return new Core.Services.HybridPromptLoader(fileBasePath, embeddedFallback, logger);
+        });
+
+        // Reloadable prompt cache
+        services.AddSingleton<Core.Interfaces.IPromptCache, Core.Services.ReloadablePromptCache>();
 
         // Register MistralProvider as singleton with HttpClient
         services.AddSingleton<Core.Services.MistralProvider>(sp =>
         {
             var httpClient = new HttpClient();
             var options = sp.GetRequiredService<IOptions<Core.Configuration.MistralOptions>>();
-            var promptLoader = sp.GetRequiredService<Core.Interfaces.IPromptLoader>();
+            var promptCache = sp.GetRequiredService<Core.Interfaces.IPromptCache>();
             var logger = sp.GetRequiredService<ILogger<Core.Services.MistralProvider>>();
-            return new Core.Services.MistralProvider(httpClient, options, promptLoader, logger);
+            return new Core.Services.MistralProvider(httpClient, options, promptCache, logger);
         });
 
         // Register ILlmProvider as alias to the same singleton instance

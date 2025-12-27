@@ -16,13 +16,16 @@ namespace Olbrasoft.PushToTalk.Core.Tests.Services;
 /// </summary>
 public class MistralProviderTests
 {
-    private readonly Mock<IPromptLoader> _mockPromptLoader;
+    private readonly Mock<IPromptCache> _mockPromptCache;
     private readonly Mock<ILogger<MistralProvider>> _mockLogger;
     private readonly MistralOptions _options;
 
     public MistralProviderTests()
     {
-        _mockPromptLoader = new Mock<IPromptLoader>();
+        _mockPromptCache = new Mock<IPromptCache>();
+        _mockPromptCache.Setup(c => c.GetPrompt("MistralSystemPrompt"))
+            .Returns("Test system prompt");
+
         _mockLogger = new Mock<ILogger<MistralProvider>>();
 
         _options = new MistralOptions
@@ -32,9 +35,6 @@ public class MistralProviderTests
             Model = "mistral-large-latest",
             MinTextLengthForCorrection = 21
         };
-
-        _mockPromptLoader.Setup(p => p.LoadPrompt("MistralSystemPrompt"))
-            .Returns("Test system prompt");
     }
 
     [Fact]
@@ -223,7 +223,7 @@ public class MistralProviderTests
         return new MistralProvider(
             httpClient,
             Options.Create(_options),
-            _mockPromptLoader.Object,
+            _mockPromptCache.Object,
             _mockLogger.Object);
     }
 }

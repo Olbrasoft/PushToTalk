@@ -23,8 +23,9 @@ internal class DBusMenuHandler : ComCanonicalDbusmenuHandler, ITrayMenuHandler
     private const int SpeechToTextServiceId = 3;
     private const int Separator2Id = 4;
     private const int LlmCorrectionId = 5;
-    private const int Separator3Id = 6;
-    private const int QuitId = 7;
+    private const int ReloadPromptId = 6;
+    private const int Separator3Id = 7;
+    private const int QuitId = 8;
 
     /// <summary>
     /// Event fired when user selects Quit from the menu.
@@ -50,6 +51,11 @@ internal class DBusMenuHandler : ComCanonicalDbusmenuHandler, ITrayMenuHandler
     /// Event fired when user toggles LLM correction.
     /// </summary>
     public event Action<bool>? OnLlmCorrectionToggled;
+
+    /// <summary>
+    /// Event fired when user wants to reload the Mistral prompt.
+    /// </summary>
+    public event Action? OnReloadPromptRequested;
 
     private string _sttServiceStatus = "Checking...";
     private string _sttServiceVersion = "Unknown";
@@ -179,6 +185,7 @@ internal class DBusMenuHandler : ComCanonicalDbusmenuHandler, ITrayMenuHandler
                     CreateChildVariant(SpeechToTextServiceId, $"STT Service: {_sttServiceStatus} (v{_sttServiceVersion})", false),
                     CreateChildVariant(Separator2Id, "", true),
                     CreateChildVariant(LlmCorrectionId, GetLlmCorrectionLabel(), false),
+                    CreateChildVariant(ReloadPromptId, "🔄 Reload LLM Prompt", false),
                     CreateChildVariant(Separator3Id, "", true),
                     CreateChildVariant(QuitId, "Quit", false)
                 };
@@ -253,6 +260,11 @@ internal class DBusMenuHandler : ComCanonicalDbusmenuHandler, ITrayMenuHandler
                 props["enabled"] = VariantValue.Bool(true);
                 props["visible"] = VariantValue.Bool(true);
                 break;
+            case ReloadPromptId:
+                props["label"] = VariantValue.String("🔄 Reload LLM Prompt");
+                props["enabled"] = VariantValue.Bool(true);
+                props["visible"] = VariantValue.Bool(true);
+                break;
             case Separator3Id:
                 props["type"] = VariantValue.String("separator");
                 props["visible"] = VariantValue.Bool(true);
@@ -312,6 +324,12 @@ internal class DBusMenuHandler : ComCanonicalDbusmenuHandler, ITrayMenuHandler
             LlmCorrectionId => (id, new Dictionary<string, VariantValue>
             {
                 ["label"] = VariantValue.String(GetLlmCorrectionLabel()),
+                ["enabled"] = VariantValue.Bool(true),
+                ["visible"] = VariantValue.Bool(true)
+            }),
+            ReloadPromptId => (id, new Dictionary<string, VariantValue>
+            {
+                ["label"] = VariantValue.String("🔄 Reload LLM Prompt"),
                 ["enabled"] = VariantValue.Bool(true),
                 ["visible"] = VariantValue.Bool(true)
             }),
@@ -385,6 +403,10 @@ internal class DBusMenuHandler : ComCanonicalDbusmenuHandler, ITrayMenuHandler
                     OnLlmCorrectionToggled?.Invoke(_llmCorrectionEnabled);
                     // Update menu to reflect new state
                     UpdateLlmCorrectionStatus(_llmCorrectionEnabled);
+                    break;
+                case ReloadPromptId:
+                    _logger.LogInformation("Reload LLM Prompt menu item clicked");
+                    OnReloadPromptRequested?.Invoke();
                     break;
             }
         }

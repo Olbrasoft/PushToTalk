@@ -29,6 +29,7 @@ public class PushToTalkTrayService : IDisposable
     public event Action? OnStartSpeechToTextRequested;
     public event Action? OnStopSpeechToTextRequested;
     public event Action<bool>? OnLlmCorrectionToggled;
+    public event Action? OnReloadPromptRequested;
 
     public bool IsActive => _mainIcon != null;
 
@@ -57,6 +58,7 @@ public class PushToTalkTrayService : IDisposable
             dbusMenuHandler.OnStartSpeechToTextRequested += () => OnStartSpeechToTextRequested?.Invoke();
             dbusMenuHandler.OnStopSpeechToTextRequested += () => OnStopSpeechToTextRequested?.Invoke();
             dbusMenuHandler.OnLlmCorrectionToggled += (enabled) => OnLlmCorrectionToggled?.Invoke(enabled);
+            dbusMenuHandler.OnReloadPromptRequested += () => OnReloadPromptRequested?.Invoke();
         }
     }
 

@@ -185,6 +185,14 @@ public class EventHandlerRegistry
             _logger.LogInformation("LLM correction toggled: {Enabled}", enabled);
             _mistralProvider.SetEnabled(enabled);
         };
+
+        // Handle Mistral prompt reload request
+        _trayService.OnReloadPromptRequested += () =>
+        {
+            _logger.LogInformation("Reloading Mistral LLM prompt...");
+            _mistralProvider.ReloadPrompt();
+            _logger.LogInformation("Mistral LLM prompt reloaded successfully");
+        };
     }
 
     private void CheckSpeechToTextServiceStatusOnStartup()
