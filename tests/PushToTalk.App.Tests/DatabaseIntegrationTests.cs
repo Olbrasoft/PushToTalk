@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Moq;
+using Olbrasoft.Testing.Xunit.Attributes;
 using PushToTalk.App.Tests.Helpers;
 using PushToTalk.Data;
 using PushToTalk.Data.Entities;
@@ -12,6 +13,7 @@ namespace PushToTalk.App.Tests;
 /// <summary>
 /// Integration tests that use REAL PostgreSQL database (push_to_talk_tests).
 /// These tests verify that database reading/writing works correctly with LLM corrections.
+/// Uses [SkipOnCIFact] to automatically skip on GitHub Actions, Azure DevOps, etc.
 /// </summary>
 public class DatabaseIntegrationTests : IAsyncLifetime
 {
@@ -37,7 +39,7 @@ public class DatabaseIntegrationTests : IAsyncLifetime
         await _context.DisposeAsync();
     }
 
-    [Fact]
+    [SkipOnCIFact]
     public async Task SaveAsync_ShouldSaveWhisperTranscription_AndReturnId()
     {
         // Arrange
@@ -53,7 +55,7 @@ public class DatabaseIntegrationTests : IAsyncLifetime
         Assert.Equal(durationMs, result.AudioDurationMs);
     }
 
-    [Fact]
+    [SkipOnCIFact]
     public async Task LlmCorrection_ShouldBeSavedSeparately_WithForeignKey()
     {
         // Arrange - Save Whisper transcription
@@ -82,7 +84,7 @@ public class DatabaseIntegrationTests : IAsyncLifetime
         Assert.Equal(transcription.Id, savedCorrection.WhisperTranscriptionId);
     }
 
-    [Fact]
+    [SkipOnCIFact]
     public async Task GetLatestCorrectedTextAsync_ShouldReturnCorrectedText_NotOriginalWhisper()
     {
         // Arrange - Simulate complete transcription flow with LLM correction
@@ -112,7 +114,7 @@ public class DatabaseIntegrationTests : IAsyncLifetime
         Assert.NotEqual(whisperText, latestText);
     }
 
-    [Fact]
+    [SkipOnCIFact]
     public async Task GetLatestCorrectedTextAsync_WhenNoCorrectionExists_ShouldReturnOriginalWhisperText()
     {
         // Arrange - Save transcription WITHOUT LLM correction (circuit breaker open, etc.)
@@ -126,7 +128,7 @@ public class DatabaseIntegrationTests : IAsyncLifetime
         Assert.Equal(whisperText, latestText);
     }
 
-    [Fact]
+    [SkipOnCIFact]
     public async Task GetLatestCorrectedTextAsync_WithMultipleCorrections_ShouldReturnMostRecent()
     {
         // Arrange - Save transcription
@@ -166,7 +168,7 @@ public class DatabaseIntegrationTests : IAsyncLifetime
         Assert.Equal("LATEST CORRECTION", latestText);
     }
 
-    [Fact]
+    [SkipOnCIFact]
     public async Task CompleteFlow_RealWorldExample_ShouldReturnCorrectText()
     {
         // Arrange - Real-world example from user bug report
@@ -195,7 +197,7 @@ public class DatabaseIntegrationTests : IAsyncLifetime
         Assert.NotEqual(whisperOriginal, retrievedText);
     }
 
-    [Fact]
+    [SkipOnCIFact]
     public async Task MultipleTranscriptions_GetLatest_ShouldReturnMostRecentTranscription()
     {
         // Arrange - Create multiple transcriptions with corrections
