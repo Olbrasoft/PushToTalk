@@ -1,7 +1,6 @@
 using System.Text.Json;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Olbrasoft.PushToTalk.Core.Interfaces;
 using PushToTalk.Data;
 using PushToTalk.Data.Entities;
 
@@ -34,7 +33,7 @@ public class TextFiltersConfig
 /// Filters unwanted text patterns from Whisper transcription output.
 /// Supports both database-driven corrections and file-based filters.
 /// </summary>
-public class TextFilter : ITextFilter
+public class TextFilter
 {
     private readonly ILogger<TextFilter> _logger;
     private readonly string? _configPath;

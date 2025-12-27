@@ -73,7 +73,6 @@ public class TranscriptionCoordinatorTests : IDisposable
             _transcriberMock.Object,
             _notificationPlayerMock.Object,
             _scopeFactoryMock.Object,
-            textFilter: null,
             soundPath: null);
 
         // Act
@@ -94,7 +93,6 @@ public class TranscriptionCoordinatorTests : IDisposable
             _transcriberMock.Object,
             _notificationPlayerMock.Object,
             _scopeFactoryMock.Object,
-            textFilter: null,
             soundPath: null);
 
         // Act
@@ -114,7 +112,6 @@ public class TranscriptionCoordinatorTests : IDisposable
             _transcriberMock.Object,
             _notificationPlayerMock.Object,
             _scopeFactoryMock.Object,
-            textFilter: null,
             soundPath: null);
 
         // Act
@@ -156,7 +153,6 @@ public class TranscriptionCoordinatorTests : IDisposable
             _transcriberMock.Object,
             _notificationPlayerMock.Object,
             _scopeFactoryMock.Object,
-            textFilter: null,
             soundPath: null);
 
         // Act
@@ -199,7 +195,6 @@ public class TranscriptionCoordinatorTests : IDisposable
             _transcriberMock.Object,
             _notificationPlayerMock.Object,
             _scopeFactoryMock.Object,
-            textFilter: null,
             soundPath: null);
 
         // Act
@@ -231,7 +226,6 @@ public class TranscriptionCoordinatorTests : IDisposable
             _transcriberMock.Object,
             _notificationPlayerMock.Object,
             _scopeFactoryMock.Object,
-            textFilter: null,
             soundPath: null);
 
         // Act
@@ -262,7 +256,6 @@ public class TranscriptionCoordinatorTests : IDisposable
             _transcriberMock.Object,
             _notificationPlayerMock.Object,
             _scopeFactoryMock.Object,
-            textFilter: null,
             soundPath: null);
 
         // Act
@@ -295,7 +288,6 @@ public class TranscriptionCoordinatorTests : IDisposable
             _transcriberMock.Object,
             _notificationPlayerMock.Object,
             _scopeFactoryMock.Object,
-            textFilter: null,
             soundPath: _testSoundPath);
 
         // Act
@@ -350,7 +342,6 @@ public class TranscriptionCoordinatorTests : IDisposable
             _transcriberMock.Object,
             _notificationPlayerMock.Object,
             _scopeFactoryMock.Object,
-            textFilter: null,
             soundPath: null);
 
         // Act
@@ -390,7 +381,6 @@ public class TranscriptionCoordinatorTests : IDisposable
             _transcriberMock.Object,
             _notificationPlayerMock.Object,
             _scopeFactoryMock.Object,
-            textFilter: null,
             soundPath: null);
 
         // Act
@@ -413,7 +403,6 @@ public class TranscriptionCoordinatorTests : IDisposable
             _transcriberMock.Object,
             _notificationPlayerMock.Object,
             _scopeFactoryMock.Object,
-            textFilter: null,
             soundPath: _testSoundPath);
 
         // Act & Assert - Should not throw
@@ -429,7 +418,6 @@ public class TranscriptionCoordinatorTests : IDisposable
             _transcriberMock.Object,
             _notificationPlayerMock.Object,
             _scopeFactoryMock.Object,
-            textFilter: null,
             soundPath: null);
 
         // Act & Assert
