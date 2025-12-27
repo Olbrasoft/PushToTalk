@@ -104,15 +104,36 @@ public static class ServiceCollectionExtensions
         // NOTE: TypingSoundPlayer removed - now using INotificationPlayer from NotificationAudio
         // TranscriptionSoundPath is still in configuration but will be used differently
 
-        // Text filter (supports both file-based and database-driven corrections)
-        services.AddSingleton<ITextFilter>(sp =>
+        // Text filter strategies (Strategy pattern)
+        services.AddSingleton<Filters.ITextFilterStrategy>(sp =>
         {
-            var logger = sp.GetRequiredService<ILogger<TextFilter>>();
-            var filtersPath = options.GetFullTextFiltersPath();
+            var logger = sp.GetRequiredService<ILogger<Filters.DatabaseCorrectionFilterStrategy>>();
             var serviceScopeFactory = sp.GetRequiredService<IServiceScopeFactory>();
-
-            return new TextFilter(logger, serviceScopeFactory, filtersPath);
+            return new Filters.DatabaseCorrectionFilterStrategy(logger, serviceScopeFactory);
         });
+
+        services.AddSingleton<Filters.ITextFilterStrategy>(sp =>
+        {
+            var logger = sp.GetRequiredService<ILogger<Filters.FileReplacementFilterStrategy>>();
+            var filtersPath = options.GetFullTextFiltersPath();
+            return new Filters.FileReplacementFilterStrategy(logger, filtersPath);
+        });
+
+        services.AddSingleton<Filters.ITextFilterStrategy>(sp =>
+        {
+            var logger = sp.GetRequiredService<ILogger<Filters.RemovePatternsFilterStrategy>>();
+            var filtersPath = options.GetFullTextFiltersPath();
+            return new Filters.RemovePatternsFilterStrategy(logger, filtersPath);
+        });
+
+        services.AddSingleton<Filters.ITextFilterStrategy>(sp =>
+        {
+            var logger = sp.GetRequiredService<ILogger<Filters.WhitespaceFilterStrategy>>();
+            return new Filters.WhitespaceFilterStrategy(logger);
+        });
+
+        // Composite text filter (applies all strategies in order)
+        services.AddSingleton<ITextFilter, Filters.CompositeTextFilter>();
 
         // Transcription coordinator (combines speech transcription + sound feedback)
         services.AddSingleton<ITranscriptionCoordinator>(sp =>

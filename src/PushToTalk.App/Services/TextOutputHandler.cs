@@ -10,12 +10,12 @@ public class TextOutputHandler : ITextOutputHandler
 {
     private readonly ILogger<TextOutputHandler> _logger;
     private readonly ITextTyper _textTyper;
-    private readonly TextFilter? _textFilter;
+    private readonly ITextFilter? _textFilter;
 
     public TextOutputHandler(
         ILogger<TextOutputHandler> logger,
         ITextTyper textTyper,
-        TextFilter? textFilter = null)
+        ITextFilter? textFilter = null)
     {
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         _textTyper = textTyper ?? throw new ArgumentNullException(nameof(textTyper));
