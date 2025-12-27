@@ -190,8 +190,40 @@ public class EventHandlerRegistry
         _trayService.OnReloadPromptRequested += () =>
         {
             _logger.LogInformation("Reloading Mistral LLM prompt...");
-            _mistralProvider.ReloadPrompt();
-            _logger.LogInformation("Mistral LLM prompt reloaded successfully");
+
+            try
+            {
+                // Copy prompt from source to deployment location
+                var sourceFile = "/home/jirka/Olbrasoft/PushToTalk/src/PushToTalk.Core/Prompts/MistralSystemPrompt.md";
+                var deployDir = "/opt/olbrasoft/push-to-talk/prompts";
+                var deployFile = Path.Combine(deployDir, "MistralSystemPrompt.md");
+
+                // Create deployment directory if it doesn't exist
+                if (!Directory.Exists(deployDir))
+                {
+                    Directory.CreateDirectory(deployDir);
+                    _logger.LogInformation("Created deployment directory: {Directory}", deployDir);
+                }
+
+                // Copy file from source to deployment location
+                if (File.Exists(sourceFile))
+                {
+                    File.Copy(sourceFile, deployFile, overwrite: true);
+                    _logger.LogInformation("Copied prompt from {Source} to {Destination}", sourceFile, deployFile);
+                }
+                else
+                {
+                    _logger.LogWarning("Source prompt file not found: {SourceFile}", sourceFile);
+                }
+
+                // Clear cache and reload prompt
+                _mistralProvider.ReloadPrompt();
+                _logger.LogInformation("Mistral LLM prompt reloaded successfully");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to reload Mistral prompt");
+            }
         };
     }
 
