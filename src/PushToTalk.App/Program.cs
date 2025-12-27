@@ -282,3 +282,9 @@ finally
 }
 
 Console.WriteLine("PushToTalk stopped");
+
+// Make implicit Program class explicit to avoid conflicts with referenced projects
+namespace Olbrasoft.PushToTalk.App
+{
+    public partial class Program { }
+}
