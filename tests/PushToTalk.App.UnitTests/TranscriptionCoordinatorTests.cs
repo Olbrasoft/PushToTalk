@@ -165,8 +165,8 @@ public class TranscriptionCoordinatorTests : IDisposable
         // Wait for background task to complete
         await Task.Delay(100);
 
-        // Assert
-        Assert.Equal("Original Whisper text", result.Text);
+        // Assert - CRITICAL: Result should contain CORRECTED text from Mistral, not original Whisper
+        Assert.Equal("Corrected by Mistral", result.Text);
         _repositoryMock.Verify(r => r.SaveAsync(
             "Original Whisper text",
             It.IsInRange(900, 1100, Moq.Range.Inclusive), // ~1000ms duration
