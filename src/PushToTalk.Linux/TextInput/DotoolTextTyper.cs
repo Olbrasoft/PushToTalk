@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using Microsoft.Extensions.Logging;
+using Olbrasoft.PushToTalk.Clipboard;
 
 namespace Olbrasoft.PushToTalk.TextInput;
 
@@ -11,6 +12,7 @@ namespace Olbrasoft.PushToTalk.TextInput;
 /// </summary>
 public class DotoolTextTyper : ITextTyper
 {
+    private readonly IClipboardManager _clipboardManager;
     private readonly ILogger<DotoolTextTyper> _logger;
     
     /// <summary>
@@ -39,9 +41,13 @@ public class DotoolTextTyper : ITextTyper
     /// <summary>
     /// Initializes a new instance of the <see cref="DotoolTextTyper"/> class.
     /// </summary>
+    /// <param name="clipboardManager">Clipboard manager for save/restore operations.</param>
     /// <param name="logger">Logger instance.</param>
-    public DotoolTextTyper(ILogger<DotoolTextTyper> logger)
+    public DotoolTextTyper(
+        IClipboardManager clipboardManager,
+        ILogger<DotoolTextTyper> logger)
     {
+        _clipboardManager = clipboardManager ?? throw new ArgumentNullException(nameof(clipboardManager));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
@@ -103,61 +109,10 @@ public class DotoolTextTyper : ITextTyper
             var textToType = text.ToLower() + " ";
 
             // Step 1: Save current clipboard content
-            string? originalClipboard = null;
-            try
-            {
-                var wlPasteProcess = new Process
-                {
-                    StartInfo = new ProcessStartInfo
-                    {
-                        FileName = "wl-paste",
-                        Arguments = "--no-newline",
-                        RedirectStandardOutput = true,
-                        RedirectStandardError = true,
-                        UseShellExecute = false,
-                        CreateNoWindow = true
-                    }
-                };
-                wlPasteProcess.Start();
-                originalClipboard = await wlPasteProcess.StandardOutput.ReadToEndAsync(cancellationToken);
-                await wlPasteProcess.WaitForExitAsync(cancellationToken);
-                _logger.LogDebug("Saved original clipboard content ({Length} chars)", originalClipboard?.Length ?? 0);
-            }
-            catch (InvalidOperationException ex)
-            {
-                _logger.LogDebug("Could not save clipboard (invalid state): {Message}", ex.Message);
-                // Continue anyway - clipboard might be empty
-            }
-            catch (System.ComponentModel.Win32Exception ex)
-            {
-                _logger.LogDebug("Could not save clipboard (process error): {Message}", ex.Message);
-                // Continue anyway - clipboard might be empty
-            }
+            var originalClipboard = await _clipboardManager.GetClipboardAsync(cancellationToken);
 
             // Step 2: Copy our text to clipboard
-            var wlCopyProcess = new Process
-            {
-                StartInfo = new ProcessStartInfo
-                {
-                    FileName = "wl-copy",
-                    RedirectStandardInput = true,
-                    RedirectStandardError = true,
-                    UseShellExecute = false,
-                    CreateNoWindow = true
-                }
-            };
-
-            wlCopyProcess.Start();
-            await wlCopyProcess.StandardInput.WriteAsync(textToType);
-            wlCopyProcess.StandardInput.Close();
-            await wlCopyProcess.WaitForExitAsync(cancellationToken);
-
-            if (wlCopyProcess.ExitCode != 0)
-            {
-                var error = await wlCopyProcess.StandardError.ReadToEndAsync(cancellationToken);
-                _logger.LogError("wl-copy failed with exit code {ExitCode}: {Error}", wlCopyProcess.ExitCode, error);
-                throw new InvalidOperationException($"wl-copy failed: {error}");
-            }
+            await _clipboardManager.SetClipboardAsync(textToType, cancellationToken);
 
             // Small delay to ensure clipboard is ready
             await Task.Delay(50, cancellationToken);
@@ -197,31 +152,12 @@ public class DotoolTextTyper : ITextTyper
             {
                 try
                 {
-                    var restoreProcess = new Process
-                    {
-                        StartInfo = new ProcessStartInfo
-                        {
-                            FileName = "wl-copy",
-                            RedirectStandardInput = true,
-                            RedirectStandardError = true,
-                            UseShellExecute = false,
-                            CreateNoWindow = true
-                        }
-                    };
-
-                    restoreProcess.Start();
-                    await restoreProcess.StandardInput.WriteAsync(originalClipboard);
-                    restoreProcess.StandardInput.Close();
-                    await restoreProcess.WaitForExitAsync(cancellationToken);
+                    await _clipboardManager.SetClipboardAsync(originalClipboard, cancellationToken);
                     _logger.LogDebug("Restored original clipboard content");
                 }
                 catch (InvalidOperationException ex)
                 {
-                    _logger.LogWarning("Could not restore clipboard (invalid state): {Message}", ex.Message);
-                }
-                catch (System.ComponentModel.Win32Exception ex)
-                {
-                    _logger.LogWarning("Could not restore clipboard (process error): {Message}", ex.Message);
+                    _logger.LogWarning("Could not restore clipboard: {Message}", ex.Message);
                 }
             }
 

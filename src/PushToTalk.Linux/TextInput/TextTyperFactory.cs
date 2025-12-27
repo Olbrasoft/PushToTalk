@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Logging;
+using Olbrasoft.PushToTalk.Clipboard;
 
 namespace Olbrasoft.PushToTalk.TextInput;
 
@@ -8,16 +9,22 @@ namespace Olbrasoft.PushToTalk.TextInput;
 /// </summary>
 public class TextTyperFactory : ITextTyperFactory
 {
+    private readonly IClipboardManager _clipboardManager;
     private readonly ILoggerFactory _loggerFactory;
     private readonly IEnvironmentProvider _environment;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="TextTyperFactory"/> class.
     /// </summary>
+    /// <param name="clipboardManager">Clipboard manager for save/restore operations.</param>
     /// <param name="loggerFactory">Logger factory for creating typed loggers.</param>
     /// <param name="environment">Environment provider for reading environment variables.</param>
-    public TextTyperFactory(ILoggerFactory loggerFactory, IEnvironmentProvider environment)
+    public TextTyperFactory(
+        IClipboardManager clipboardManager,
+        ILoggerFactory loggerFactory,
+        IEnvironmentProvider environment)
     {
+        _clipboardManager = clipboardManager ?? throw new ArgumentNullException(nameof(clipboardManager));
         _loggerFactory = loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory));
         _environment = environment ?? throw new ArgumentNullException(nameof(environment));
     }
@@ -54,7 +61,7 @@ public class TextTyperFactory : ITextTyperFactory
     public ITextTyper Create()
     {
         var logger = _loggerFactory.CreateLogger<DotoolTextTyper>();
-        var dotoolTyper = new DotoolTextTyper(logger);
+        var dotoolTyper = new DotoolTextTyper(_clipboardManager, logger);
 
         if (dotoolTyper.IsAvailable)
         {

@@ -84,6 +84,13 @@ public static class ServiceCollectionExtensions
         // Environment provider for display server detection
         services.AddSingleton<IEnvironmentProvider, SystemEnvironmentProvider>();
 
+        // Clipboard manager for save/restore operations
+        services.AddSingleton<Olbrasoft.PushToTalk.Clipboard.IClipboardManager>(sp =>
+        {
+            var logger = sp.GetRequiredService<ILogger<Olbrasoft.PushToTalk.Clipboard.WlClipboardManager>>();
+            return new Olbrasoft.PushToTalk.Clipboard.WlClipboardManager(logger);
+        });
+
         // Text typer factory (injectable, testable)
         services.AddSingleton<ITextTyperFactory, TextTyperFactory>();
 
