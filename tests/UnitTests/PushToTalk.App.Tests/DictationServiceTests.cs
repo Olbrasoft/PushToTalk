@@ -100,6 +100,10 @@ public class DictationServiceTests : IDisposable
     [Fact]
     public async Task StopDictationAsync_WhenNotRecording_ShouldDoNothing()
     {
+        // Arrange - Setup state machine to reject transition to Transcribing (since we're Idle)
+        _stateMachineMock.Setup(s => s.CanTransitionTo(DictationState.Transcribing))
+            .Returns(false);
+
         // Act
         await _service.StopDictationAsync();
 
