@@ -23,6 +23,13 @@ public class DatabaseIntegrationTests : IAsyncLifetime
 
     public async Task InitializeAsync()
     {
+        // CRITICAL: Skip initialization on CI - prevents database connection attempts
+        // Tests won't run anyway due to [SkipOnCIFact], but class still gets instantiated
+        if (IsRunningOnCI())
+        {
+            return;
+        }
+
         // Verify we're using TEST database (safety check)
         TestDbContextFactory.VerifyTestDatabase();
 
@@ -36,7 +43,18 @@ public class DatabaseIntegrationTests : IAsyncLifetime
 
     public async Task DisposeAsync()
     {
-        await _context.DisposeAsync();
+        if (_context != null)
+        {
+            await _context.DisposeAsync();
+        }
+    }
+
+    private static bool IsRunningOnCI()
+    {
+        // Check common CI environment variables
+        return !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("CI")) ||
+               !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("GITHUB_ACTIONS")) ||
+               !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("TF_BUILD")); // Azure DevOps
     }
 
     [SkipOnCIFact]
