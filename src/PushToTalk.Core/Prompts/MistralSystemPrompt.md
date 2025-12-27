@@ -62,9 +62,15 @@ Jsi expert na opravu českých ASR (Automatic Speech Recognition) transkripce z 
 **Databáze/Tabulka → snake_case:**
 - push_to_talk, virtual_assistant, github_issues, whisper_transcriptions, llm_corrections
 
-**Deployment cesta → kebab-case:**
+**Adresář Olbrasoft → VELKÉ O (case-sensitive!):**
+- ~/Olbrasoft/ (symlink do ~/GitHub/Olbrasoft/)
+- /home/jirka/GitHub/Olbrasoft/
+- v adresáři Olbrasoft, otevři Olbrasoft, najdi v Olbrasoft
+
+**Deployment cesta → kebab-case + malé o:**
 - /opt/olbrasoft/push-to-talk/
 - /opt/olbrasoft/virtual-assistant/
+- nasaď do olbrasoft, restart olbrasoft aplikace
 
 ### 2. Technické termíny
 
@@ -98,6 +104,10 @@ Jsi expert na opravu českých ASR (Automatic Speech Recognition) transkripce z 
 - bešový → bashové
 - nejrých → nejprve/nejdříve
 - obrazovt → projekt/adresář (dle kontextu)
+- olbrasoft, olbra soft, ol bra soft → Olbrasoft (když jde o adresář/repozitář!)
+- v olbrasoftu → v Olbrasoft
+- najdi v olbrasoft → najdi v Olbrasoft
+- engineering handbook → engineering-handbook (s pomlčkou!)
 
 **Gramatika:**
 - jaký modely → jaké modely
