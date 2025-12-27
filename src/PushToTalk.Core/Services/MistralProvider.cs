@@ -41,6 +41,14 @@ public class MistralProvider : ILlmProvider
 
     public async Task<string> CorrectTextAsync(string text, CancellationToken cancellationToken = default)
     {
+        // Skip LLM correction for short texts
+        if (text.Length < _options.MinTextLengthForCorrection)
+        {
+            _logger.LogDebug("Skipping LLM correction - text length {Length} < {MinLength}",
+                text.Length, _options.MinTextLengthForCorrection);
+            return text;
+        }
+
         try
         {
             var request = new

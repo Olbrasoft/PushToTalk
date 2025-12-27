@@ -40,4 +40,11 @@ public class MistralOptions
     /// Lower = more deterministic.
     /// </summary>
     public double Temperature { get; set; } = 0.3;
+
+    /// <summary>
+    /// Minimum text length (in characters) required before sending to LLM for correction.
+    /// Texts shorter than this threshold will skip LLM correction and return unchanged.
+    /// Default: 21 characters.
+    /// </summary>
+    public int MinTextLengthForCorrection { get; set; } = 21;
 }
