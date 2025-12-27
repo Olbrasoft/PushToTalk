@@ -220,8 +220,8 @@ internal class DBusMenuHandler : ComCanonicalDbusmenuHandler, ITrayMenuHandler
     private string GetLlmCorrectionLabel()
     {
         return _llmCorrectionEnabled
-            ? "✅ Vypnout posílání do LLM"
-            : "❌ Zapnout posílání do LLM";
+            ? "✅ Posílání do LLM - Vypnout"
+            : "❌ Posílání do LLM - Zapnout";
     }
 
     private (int, Dictionary<string, VariantValue>, VariantValue[]) GetMenuItemLayout(int id)
