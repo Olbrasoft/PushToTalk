@@ -1,8 +1,7 @@
-/*
 using Microsoft.EntityFrameworkCore;
 using PushToTalk.Data.EntityFrameworkCore;
 
-namespace PushToTalk.App.Tests.Helpers;
+namespace PushToTalk.App.IntegrationTests.Helpers;
 
 /// <summary>
 /// Factory for creating DbContext instances for integration tests.
@@ -55,4 +54,3 @@ public class TestDbContextFactory
         }
     }
 }
-*/

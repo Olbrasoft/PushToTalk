@@ -1,15 +1,14 @@
-/*
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Moq;
 using Olbrasoft.Testing.Xunit.Attributes;
-using PushToTalk.App.Tests.Helpers;
+using PushToTalk.App.IntegrationTests.Helpers;
 using PushToTalk.Data;
 using PushToTalk.Data.Entities;
 using PushToTalk.Data.EntityFrameworkCore;
 using Xunit;
 
-namespace PushToTalk.App.Tests;
+namespace PushToTalk.App.IntegrationTests;
 
 /// <summary>
 /// Integration tests that use REAL PostgreSQL database (push_to_talk_tests).
@@ -310,4 +309,3 @@ public class DatabaseIntegrationTests : IAsyncLifetime
             Times.Once);
     }
 }
-*/
