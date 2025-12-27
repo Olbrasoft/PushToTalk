@@ -104,8 +104,8 @@ public class DotoolTextTyper : ITextTyper
 
         try
         {
-            // Convert to lowercase and add space
-            var textToType = text.ToLower() + " ";
+            // Add space after text (preserve original case)
+            var textToType = text + " ";
 
             // Step 1: Save current clipboard content
             var originalClipboard = await _clipboardManager.GetClipboardAsync(cancellationToken);
