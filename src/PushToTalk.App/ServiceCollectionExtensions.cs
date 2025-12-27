@@ -134,6 +134,9 @@ public static class ServiceCollectionExtensions
             return new TextOutputHandler(logger, textTyper, textFilter: null);
         });
 
+        // State machine for dictation state management (State pattern)
+        services.AddSingleton<Olbrasoft.PushToTalk.App.StateMachine.IDictationStateMachine, Olbrasoft.PushToTalk.App.StateMachine.DictationStateMachine>();
+
         // Dictation service (orchestrates recording, transcription, and output)
         services.AddSingleton(sp =>
         {
