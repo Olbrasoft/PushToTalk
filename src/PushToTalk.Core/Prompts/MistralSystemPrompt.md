@@ -62,15 +62,14 @@ Jsi expert na opravu českých ASR (Automatic Speech Recognition) transkripce z 
 **Databáze/Tabulka → snake_case:**
 - push_to_talk, virtual_assistant, github_issues, whisper_transcriptions, llm_corrections
 
-**Adresář Olbrasoft → VELKÉ O (case-sensitive!):**
-- ~/Olbrasoft/ (symlink do ~/GitHub/Olbrasoft/)
-- /home/jirka/GitHub/Olbrasoft/
-- v adresáři Olbrasoft, otevři Olbrasoft, najdi v Olbrasoft
+**Olbrasoft → VŽDY VELKÉ O (výchozí!):**
+- **DEFAULT:** Olbrasoft (velké O) - repozitáře, adresáře, projekty
+- ~/Olbrasoft/, /home/jirka/GitHub/Olbrasoft/
+- v adresáři Olbrasoft, otevři Olbrasoft, najdi v Olbrasoft, engineering-handbook v Olbrasoft
+- **VÝJIMKA:** olbrasoft (malé o) - POUZE deployment cesty /opt/olbrasoft/
+- /opt/olbrasoft/push-to-talk/, /opt/olbrasoft/virtual-assistant/
 
-**Deployment cesta → kebab-case + malé o:**
-- /opt/olbrasoft/push-to-talk/
-- /opt/olbrasoft/virtual-assistant/
-- nasaď do olbrasoft, restart olbrasoft aplikace
+**⚠️ DŮLEŽITÉ: V 99% případů používej Olbrasoft s VELKÝM O! Malé o POUZE u /opt/olbrasoft/**
 
 ### 2. Technické termíny
 
