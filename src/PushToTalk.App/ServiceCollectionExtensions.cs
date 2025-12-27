@@ -91,7 +91,7 @@ public static class ServiceCollectionExtensions
         // TranscriptionSoundPath is still in configuration but will be used differently
 
         // Text filter (supports both file-based and database-driven corrections)
-        services.AddSingleton(sp =>
+        services.AddSingleton<ITextFilter>(sp =>
         {
             var logger = sp.GetRequiredService<ILogger<TextFilter>>();
             var filtersPath = options.GetFullTextFiltersPath();
@@ -107,8 +107,9 @@ public static class ServiceCollectionExtensions
             var transcriber = sp.GetRequiredService<ISpeechTranscriber>();
             var notificationPlayer = sp.GetRequiredService<Olbrasoft.NotificationAudio.Abstractions.INotificationPlayer>();
             var serviceScopeFactory = sp.GetRequiredService<IServiceScopeFactory>();
+            var textFilter = sp.GetService<ITextFilter>();
             var soundPath = options.GetFullTranscriptionSoundPath();
-            return new TranscriptionCoordinator(logger, transcriber, notificationPlayer, serviceScopeFactory, soundPath);
+            return new TranscriptionCoordinator(logger, transcriber, notificationPlayer, serviceScopeFactory, textFilter, soundPath);
         });
 
         // Text output handler (combines text filtering + typing)
@@ -116,8 +117,8 @@ public static class ServiceCollectionExtensions
         {
             var logger = sp.GetRequiredService<ILogger<TextOutputHandler>>();
             var textTyper = sp.GetRequiredService<ITextTyper>();
-            var textFilter = sp.GetService<TextFilter>();
-            return new TextOutputHandler(logger, textTyper, textFilter);
+            var textFilter = sp.GetService<ITextFilter>();
+            return new TextOutputHandler(logger, textTyper, textFilter as TextFilter);
         });
 
         // Dictation service (orchestrates recording, transcription, and output)
