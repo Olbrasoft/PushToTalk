@@ -3,18 +3,21 @@ using Moq;
 using Olbrasoft.PushToTalk.Clipboard;
 using Olbrasoft.PushToTalk.Core.Interfaces;
 using Olbrasoft.PushToTalk.TextInput;
+using Olbrasoft.PushToTalk.WindowManagement;
 
 namespace Olbrasoft.PushToTalk.Linux.Tests.TextInput;
 
 public class TextTyperFactoryTests
 {
     private readonly Mock<IClipboardManager> _clipboardManagerMock;
+    private readonly Mock<ITerminalDetector> _terminalDetectorMock;
     private readonly Mock<ILoggerFactory> _loggerFactoryMock;
     private readonly Mock<IEnvironmentProvider> _environmentMock;
 
     public TextTyperFactoryTests()
     {
         _clipboardManagerMock = new Mock<IClipboardManager>();
+        _terminalDetectorMock = new Mock<ITerminalDetector>();
         _loggerFactoryMock = new Mock<ILoggerFactory>();
         _environmentMock = new Mock<IEnvironmentProvider>();
 
@@ -29,7 +32,15 @@ public class TextTyperFactoryTests
     {
         // Act & Assert
         Assert.Throws<ArgumentNullException>(() =>
-            new TextTyperFactory(null!, _loggerFactoryMock.Object, _environmentMock.Object));
+            new TextTyperFactory(null!, _terminalDetectorMock.Object, _loggerFactoryMock.Object, _environmentMock.Object));
+    }
+
+    [Fact]
+    public void Constructor_WithNullTerminalDetector_ShouldThrowArgumentNullException()
+    {
+        // Act & Assert
+        Assert.Throws<ArgumentNullException>(() =>
+            new TextTyperFactory(_clipboardManagerMock.Object, null!, _loggerFactoryMock.Object, _environmentMock.Object));
     }
 
     [Fact]
@@ -37,7 +48,7 @@ public class TextTyperFactoryTests
     {
         // Act & Assert
         Assert.Throws<ArgumentNullException>(() =>
-            new TextTyperFactory(_clipboardManagerMock.Object, null!, _environmentMock.Object));
+            new TextTyperFactory(_clipboardManagerMock.Object, _terminalDetectorMock.Object, null!, _environmentMock.Object));
     }
 
     [Fact]
@@ -45,7 +56,7 @@ public class TextTyperFactoryTests
     {
         // Act & Assert
         Assert.Throws<ArgumentNullException>(() =>
-            new TextTyperFactory(_clipboardManagerMock.Object, _loggerFactoryMock.Object, null!));
+            new TextTyperFactory(_clipboardManagerMock.Object, _terminalDetectorMock.Object, _loggerFactoryMock.Object, null!));
     }
 
     [Theory]
@@ -61,7 +72,7 @@ public class TextTyperFactoryTests
         _environmentMock.Setup(e => e.GetEnvironmentVariable("XDG_SESSION_TYPE"))
             .Returns(sessionType);
 
-        var factory = new TextTyperFactory(_clipboardManagerMock.Object, _loggerFactoryMock.Object, _environmentMock.Object);
+        var factory = new TextTyperFactory(_clipboardManagerMock.Object, _terminalDetectorMock.Object, _loggerFactoryMock.Object, _environmentMock.Object);
 
         // Act
         var result = factory.IsWayland();
@@ -79,7 +90,7 @@ public class TextTyperFactoryTests
         _environmentMock.Setup(e => e.GetEnvironmentVariable("WAYLAND_DISPLAY"))
             .Returns("wayland-0");
 
-        var factory = new TextTyperFactory(_clipboardManagerMock.Object, _loggerFactoryMock.Object, _environmentMock.Object);
+        var factory = new TextTyperFactory(_clipboardManagerMock.Object, _terminalDetectorMock.Object, _loggerFactoryMock.Object, _environmentMock.Object);
 
         // Act
         var result = factory.IsWayland();
@@ -99,7 +110,7 @@ public class TextTyperFactoryTests
         _environmentMock.Setup(e => e.GetEnvironmentVariable("DISPLAY"))
             .Returns(":0");
 
-        var factory = new TextTyperFactory(_clipboardManagerMock.Object, _loggerFactoryMock.Object, _environmentMock.Object);
+        var factory = new TextTyperFactory(_clipboardManagerMock.Object, _terminalDetectorMock.Object, _loggerFactoryMock.Object, _environmentMock.Object);
 
         // Act
         var result = factory.IsWayland();
@@ -115,7 +126,7 @@ public class TextTyperFactoryTests
         _environmentMock.Setup(e => e.GetEnvironmentVariable(It.IsAny<string>()))
             .Returns((string?)null);
 
-        var factory = new TextTyperFactory(_clipboardManagerMock.Object, _loggerFactoryMock.Object, _environmentMock.Object);
+        var factory = new TextTyperFactory(_clipboardManagerMock.Object, _terminalDetectorMock.Object, _loggerFactoryMock.Object, _environmentMock.Object);
 
         // Act
         var result = factory.IsWayland();
@@ -135,7 +146,7 @@ public class TextTyperFactoryTests
         _environmentMock.Setup(e => e.GetEnvironmentVariable("XDG_SESSION_TYPE"))
             .Returns(sessionType);
 
-        var factory = new TextTyperFactory(_clipboardManagerMock.Object, _loggerFactoryMock.Object, _environmentMock.Object);
+        var factory = new TextTyperFactory(_clipboardManagerMock.Object, _terminalDetectorMock.Object, _loggerFactoryMock.Object, _environmentMock.Object);
 
         // Act
         var result = factory.GetDisplayServerName();
@@ -153,7 +164,7 @@ public class TextTyperFactoryTests
         _environmentMock.Setup(e => e.GetEnvironmentVariable("WAYLAND_DISPLAY"))
             .Returns("wayland-0");
 
-        var factory = new TextTyperFactory(_clipboardManagerMock.Object, _loggerFactoryMock.Object, _environmentMock.Object);
+        var factory = new TextTyperFactory(_clipboardManagerMock.Object, _terminalDetectorMock.Object, _loggerFactoryMock.Object, _environmentMock.Object);
 
         // Act
         var result = factory.GetDisplayServerName();
@@ -173,7 +184,7 @@ public class TextTyperFactoryTests
         _environmentMock.Setup(e => e.GetEnvironmentVariable("DISPLAY"))
             .Returns(":0");
 
-        var factory = new TextTyperFactory(_clipboardManagerMock.Object, _loggerFactoryMock.Object, _environmentMock.Object);
+        var factory = new TextTyperFactory(_clipboardManagerMock.Object, _terminalDetectorMock.Object, _loggerFactoryMock.Object, _environmentMock.Object);
 
         // Act
         var result = factory.GetDisplayServerName();
@@ -189,7 +200,7 @@ public class TextTyperFactoryTests
         _environmentMock.Setup(e => e.GetEnvironmentVariable(It.IsAny<string>()))
             .Returns((string?)null);
 
-        var factory = new TextTyperFactory(_clipboardManagerMock.Object, _loggerFactoryMock.Object, _environmentMock.Object);
+        var factory = new TextTyperFactory(_clipboardManagerMock.Object, _terminalDetectorMock.Object, _loggerFactoryMock.Object, _environmentMock.Object);
 
         // Act
         var result = factory.GetDisplayServerName();
@@ -206,7 +217,7 @@ public class TextTyperFactoryTests
     //     _environmentMock.Setup(e => e.GetEnvironmentVariable("XDG_SESSION_TYPE"))
     //         .Returns("wayland");
     //
-    //     var factory = new TextTyperFactory(_clipboardManagerMock.Object, _loggerFactoryMock.Object, _environmentMock.Object);
+    //     var factory = new TextTyperFactory(_clipboardManagerMock.Object, _terminalDetectorMock.Object, _loggerFactoryMock.Object, _environmentMock.Object);
     //
     //     // Act
     //     var result = factory.Create();

@@ -91,6 +91,13 @@ public static class ServiceCollectionExtensions
             return new Olbrasoft.PushToTalk.Clipboard.WlClipboardManager(logger);
         });
 
+        // Terminal detector for window class detection
+        services.AddSingleton<Olbrasoft.PushToTalk.WindowManagement.ITerminalDetector>(sp =>
+        {
+            var logger = sp.GetRequiredService<ILogger<Olbrasoft.PushToTalk.WindowManagement.WaylandTerminalDetector>>();
+            return new Olbrasoft.PushToTalk.WindowManagement.WaylandTerminalDetector(logger);
+        });
+
         // Text typer factory (injectable, testable)
         services.AddSingleton<ITextTyperFactory, TextTyperFactory>();
 

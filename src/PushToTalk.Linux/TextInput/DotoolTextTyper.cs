@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using Microsoft.Extensions.Logging;
 using Olbrasoft.PushToTalk.Clipboard;
+using Olbrasoft.PushToTalk.WindowManagement;
 
 namespace Olbrasoft.PushToTalk.TextInput;
 
@@ -13,41 +14,22 @@ namespace Olbrasoft.PushToTalk.TextInput;
 public class DotoolTextTyper : ITextTyper
 {
     private readonly IClipboardManager _clipboardManager;
+    private readonly ITerminalDetector _terminalDetector;
     private readonly ILogger<DotoolTextTyper> _logger;
-    
-    /// <summary>
-    /// Terminal window class names that require Ctrl+Shift+V for pasting.
-    /// </summary>
-    private static readonly HashSet<string> TerminalClasses = new(StringComparer.OrdinalIgnoreCase)
-    {
-        "kitty",
-        "gnome-terminal",
-        "gnome-terminal-server",
-        "org.gnome.Terminal",
-        "konsole",
-        "xfce4-terminal",
-        "mate-terminal",
-        "tilix",
-        "terminator",
-        "alacritty",
-        "wezterm",
-        "foot",
-        "xterm",
-        "urxvt",
-        "st",
-        "terminology"
-    };
 
     /// <summary>
     /// Initializes a new instance of the <see cref="DotoolTextTyper"/> class.
     /// </summary>
     /// <param name="clipboardManager">Clipboard manager for save/restore operations.</param>
+    /// <param name="terminalDetector">Terminal detector for window class detection.</param>
     /// <param name="logger">Logger instance.</param>
     public DotoolTextTyper(
         IClipboardManager clipboardManager,
+        ITerminalDetector terminalDetector,
         ILogger<DotoolTextTyper> logger)
     {
         _clipboardManager = clipboardManager ?? throw new ArgumentNullException(nameof(clipboardManager));
+        _terminalDetector = terminalDetector ?? throw new ArgumentNullException(nameof(terminalDetector));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
@@ -247,118 +229,12 @@ public class DotoolTextTyper : ITextTyper
     /// </summary>
     private async Task<string> GetPasteShortcutAsync(CancellationToken cancellationToken)
     {
-        try
-        {
-            var windowClass = await GetActiveWindowClassAsync(cancellationToken);
-            
-            if (!string.IsNullOrEmpty(windowClass) && TerminalClasses.Contains(windowClass))
-            {
-                _logger.LogInformation("Detected terminal window: {WindowClass}, using Ctrl+Shift+V", windowClass);
-                return "ctrl+shift+v";
-            }
-            
-            _logger.LogInformation("Non-terminal window detected: {WindowClass}, using Ctrl+V", windowClass ?? "(unknown)");
-            return "ctrl+v";
-        }
-        catch (InvalidOperationException ex)
-        {
-            _logger.LogWarning(ex, "Process error detecting window class, defaulting to Ctrl+V");
-            return "ctrl+v";
-        }
-        catch (System.ComponentModel.Win32Exception ex)
-        {
-            _logger.LogWarning(ex, "Failed to start process for window class detection, defaulting to Ctrl+V");
-            return "ctrl+v";
-        }
-    }
+        var isTerminal = await _terminalDetector.IsTerminalActiveAsync(cancellationToken);
+        var pasteShortcut = isTerminal ? "ctrl+shift+v" : "ctrl+v";
 
-    /// <summary>
-    /// Gets the WM_CLASS of the currently active window using window-calls GNOME Shell extension.
-    /// Uses the List method and finds the window with focus=true.
-    /// </summary>
-    private async Task<string?> GetActiveWindowClassAsync(CancellationToken cancellationToken)
-    {
-        try
-        {
-            var process = new Process
-            {
-                StartInfo = new ProcessStartInfo
-                {
-                    FileName = "gdbus",
-                    Arguments = "call --session --dest org.gnome.Shell " +
-                               "--object-path /org/gnome/Shell/Extensions/Windows " +
-                               "--method org.gnome.Shell.Extensions.Windows.List",
-                    RedirectStandardOutput = true,
-                    RedirectStandardError = true,
-                    UseShellExecute = false,
-                    CreateNoWindow = true
-                }
-            };
+        _logger.LogInformation("Using paste shortcut: {Shortcut} (terminal: {IsTerminal})",
+            pasteShortcut, isTerminal);
 
-            process.Start();
-            var output = await process.StandardOutput.ReadToEndAsync(cancellationToken);
-            await process.WaitForExitAsync(cancellationToken);
-
-            if (process.ExitCode == 0 && !string.IsNullOrWhiteSpace(output))
-            {
-                _logger.LogDebug("D-Bus window-calls returned: {Output}", output.Trim());
-
-                // Output format is: ('[{"wm_class":"kitty",...,"focus":true},...]',)
-                // Extract the JSON array from the gdbus output
-                // output is guaranteed non-null by the if condition above
-                var jsonStart = output.IndexOf('[');
-                var jsonEnd = output.LastIndexOf(']');
-                
-                if (jsonStart >= 0 && jsonEnd > jsonStart)
-                {
-                    var jsonArray = output.Substring(jsonStart, jsonEnd - jsonStart + 1);
-                    
-                    // Parse JSON and find focused window
-                    var windows = System.Text.Json.JsonSerializer.Deserialize<System.Text.Json.JsonElement>(jsonArray);
-                    
-                    foreach (var window in windows.EnumerateArray())
-                    {
-                        if (window.TryGetProperty("focus", out var focusProp) && focusProp.GetBoolean())
-                        {
-                            if (window.TryGetProperty("wm_class", out var wmClassProp))
-                            {
-                                var windowClass = wmClassProp.GetString();
-                                _logger.LogDebug("Focused window class: {WindowClass}", windowClass);
-                                return windowClass;
-                            }
-                        }
-                    }
-                    
-                    _logger.LogWarning("No focused window found in window list");
-                }
-                else
-                {
-                    _logger.LogWarning("Could not find JSON array in output: {Output}", output?.Trim());
-                }
-            }
-            else
-            {
-                var error = await process.StandardError.ReadToEndAsync(cancellationToken);
-                _logger.LogWarning("D-Bus call failed: ExitCode={ExitCode}, Error={Error}", 
-                    process.ExitCode, error?.Trim());
-            }
-
-            return null;
-        }
-        catch (InvalidOperationException ex)
-        {
-            _logger.LogDebug(ex, "Process error getting active window class via D-Bus");
-            return null;
-        }
-        catch (System.ComponentModel.Win32Exception ex)
-        {
-            _logger.LogDebug(ex, "Failed to start gdbus process for active window class");
-            return null;
-        }
-        catch (System.Text.Json.JsonException ex)
-        {
-            _logger.LogDebug(ex, "Failed to parse D-Bus JSON response for window class");
-            return null;
-        }
+        return pasteShortcut;
     }
 }

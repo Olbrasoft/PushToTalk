@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Logging;
 using Olbrasoft.PushToTalk.Clipboard;
+using Olbrasoft.PushToTalk.WindowManagement;
 
 namespace Olbrasoft.PushToTalk.TextInput;
 
@@ -10,6 +11,7 @@ namespace Olbrasoft.PushToTalk.TextInput;
 public class TextTyperFactory : ITextTyperFactory
 {
     private readonly IClipboardManager _clipboardManager;
+    private readonly ITerminalDetector _terminalDetector;
     private readonly ILoggerFactory _loggerFactory;
     private readonly IEnvironmentProvider _environment;
 
@@ -17,14 +19,17 @@ public class TextTyperFactory : ITextTyperFactory
     /// Initializes a new instance of the <see cref="TextTyperFactory"/> class.
     /// </summary>
     /// <param name="clipboardManager">Clipboard manager for save/restore operations.</param>
+    /// <param name="terminalDetector">Terminal detector for window class detection.</param>
     /// <param name="loggerFactory">Logger factory for creating typed loggers.</param>
     /// <param name="environment">Environment provider for reading environment variables.</param>
     public TextTyperFactory(
         IClipboardManager clipboardManager,
+        ITerminalDetector terminalDetector,
         ILoggerFactory loggerFactory,
         IEnvironmentProvider environment)
     {
         _clipboardManager = clipboardManager ?? throw new ArgumentNullException(nameof(clipboardManager));
+        _terminalDetector = terminalDetector ?? throw new ArgumentNullException(nameof(terminalDetector));
         _loggerFactory = loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory));
         _environment = environment ?? throw new ArgumentNullException(nameof(environment));
     }
@@ -61,7 +66,7 @@ public class TextTyperFactory : ITextTyperFactory
     public ITextTyper Create()
     {
         var logger = _loggerFactory.CreateLogger<DotoolTextTyper>();
-        var dotoolTyper = new DotoolTextTyper(_clipboardManager, logger);
+        var dotoolTyper = new DotoolTextTyper(_clipboardManager, _terminalDetector, logger);
 
         if (dotoolTyper.IsAvailable)
         {
