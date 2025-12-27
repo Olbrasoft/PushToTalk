@@ -16,6 +16,7 @@ public class TranscriptionCoordinator : ITranscriptionCoordinator
     private readonly ISpeechTranscriber _speechTranscriber;
     private readonly INotificationPlayer _notificationPlayer;
     private readonly IServiceScopeFactory _serviceScopeFactory;
+    private readonly ITextFilter? _textFilter;
     private readonly string? _soundPath;
     private bool _disposed;
     private Task? _loopTask;
@@ -26,12 +27,14 @@ public class TranscriptionCoordinator : ITranscriptionCoordinator
         ISpeechTranscriber speechTranscriber,
         INotificationPlayer notificationPlayer,
         IServiceScopeFactory serviceScopeFactory,
+        ITextFilter? textFilter = null,
         string? soundPath = null)
     {
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         _speechTranscriber = speechTranscriber ?? throw new ArgumentNullException(nameof(speechTranscriber));
         _notificationPlayer = notificationPlayer ?? throw new ArgumentNullException(nameof(notificationPlayer));
         _serviceScopeFactory = serviceScopeFactory ?? throw new ArgumentNullException(nameof(serviceScopeFactory));
+        _textFilter = textFilter;
         _soundPath = soundPath;
     }
 
@@ -51,55 +54,70 @@ public class TranscriptionCoordinator : ITranscriptionCoordinator
             StartSoundLoop();
 
             _logger.LogInformation("Starting transcription of {ByteCount} bytes...", audioData.Length);
-            var result = await _speechTranscriber.TranscribeAsync(audioData, cancellationToken);
 
-            // Save successful transcription to database (background task, don't block)
-            if (result.Success && !string.IsNullOrWhiteSpace(result.Text))
+            // Step 1: Whisper transcription
+            var whisperResult = await _speechTranscriber.TranscribeAsync(audioData, cancellationToken);
+
+            if (!whisperResult.Success || string.IsNullOrWhiteSpace(whisperResult.Text))
             {
-                // Calculate audio duration from byte size
-                // Audio format: 16000 Hz, 1 channel (mono), 16-bit (2 bytes per sample)
-                var durationMs = (int)((audioData.Length / 2.0) / 16000.0 * 1000.0);
-
-                _ = Task.Run(async () =>
-                {
-                    try
-                    {
-                        using var scope = _serviceScopeFactory.CreateScope();
-                        var repository = scope.ServiceProvider.GetRequiredService<ITranscriptionRepository>();
-                        var llmCorrectionService = scope.ServiceProvider.GetRequiredService<ILlmCorrectionService>();
-
-                        // Save Whisper transcription first
-                        var transcription = await repository.SaveAsync(
-                            text: result.Text,
-                            durationMs: durationMs,
-                            ct: CancellationToken.None); // Use None since this is background task
-
-                        _logger.LogDebug("Transcription saved to database with ID: {TranscriptionId}", transcription.Id);
-
-                        // Run LLM correction (async, non-blocking for dictation workflow)
-                        var correctedText = await llmCorrectionService.CorrectTranscriptionAsync(
-                            transcription.Id,
-                            result.Text,
-                            CancellationToken.None);
-
-                        if (correctedText != result.Text)
-                        {
-                            _logger.LogInformation("LLM corrected text from '{Original}' to '{Corrected}'",
-                                result.Text, correctedText);
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.LogError(ex, "Failed to save transcription or run LLM correction");
-                    }
-                }, cancellationToken);
+                return whisperResult;
             }
 
-            return result;
+            // Step 2: Apply TextFilter corrections (database + file-based)
+            var filteredText = _textFilter?.Apply(whisperResult.Text) ?? whisperResult.Text;
+
+            if (filteredText != whisperResult.Text)
+            {
+                _logger.LogInformation("TextFilter applied: '{Original}' → '{Filtered}'",
+                    whisperResult.Text, filteredText);
+            }
+
+            // Step 3: Save to database and run Mistral LLM correction (SYNCHRONOUSLY - user waits for this!)
+            string finalText = filteredText;
+
+            try
+            {
+                using var scope = _serviceScopeFactory.CreateScope();
+                var repository = scope.ServiceProvider.GetRequiredService<ITranscriptionRepository>();
+                var llmCorrectionService = scope.ServiceProvider.GetRequiredService<ILlmCorrectionService>();
+
+                // Calculate audio duration
+                var durationMs = (int)((audioData.Length / 2.0) / 16000.0 * 1000.0);
+
+                // Save Whisper transcription (original, not filtered)
+                var transcription = await repository.SaveAsync(
+                    text: whisperResult.Text,
+                    durationMs: durationMs,
+                    ct: cancellationToken);
+
+                _logger.LogDebug("Transcription saved to database with ID: {TranscriptionId}", transcription.Id);
+
+                // Run Mistral LLM correction (AWAIT - don't return until complete!)
+                // This ensures sound loop plays during entire process
+                var mistralCorrectedText = await llmCorrectionService.CorrectTranscriptionAsync(
+                    transcription.Id,
+                    filteredText,
+                    cancellationToken);
+
+                if (mistralCorrectedText != filteredText)
+                {
+                    _logger.LogInformation("Mistral corrected text from '{Filtered}' to '{Corrected}'",
+                        filteredText, mistralCorrectedText);
+                    finalText = mistralCorrectedText;
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to save transcription or run LLM correction - using filtered text");
+                // On error, fallback to filtered text (TextFilter corrections only)
+            }
+
+            // Return result with final text (TextFilter + Mistral corrections)
+            return new TranscriptionResult(finalText, whisperResult.Confidence);
         }
         finally
         {
-            // Always stop sound loop
+            // CRITICAL: Sound loop stops ONLY after Mistral completes (or errors)
             await StopSoundLoopAsync();
         }
     }

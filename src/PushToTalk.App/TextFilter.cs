@@ -33,7 +33,7 @@ public class TextFiltersConfig
 /// Filters unwanted text patterns from Whisper transcription output.
 /// Supports both database-driven corrections and file-based filters.
 /// </summary>
-public class TextFilter
+public class TextFilter : ITextFilter
 {
     private readonly ILogger<TextFilter> _logger;
     private readonly string? _configPath;

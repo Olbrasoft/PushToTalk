@@ -76,6 +76,7 @@ public class TranscriptionCoordinatorTests : IDisposable
             _transcriberMock.Object,
             _notificationPlayerMock.Object,
             CreateServiceScopeFactory(),
+            textFilter: null,
             soundPath: null);
 
         // Act
@@ -96,6 +97,7 @@ public class TranscriptionCoordinatorTests : IDisposable
             _transcriberMock.Object,
             _notificationPlayerMock.Object,
             CreateServiceScopeFactory(),
+            textFilter: null,
             soundPath: null);
 
         // Act
@@ -115,6 +117,7 @@ public class TranscriptionCoordinatorTests : IDisposable
             _transcriberMock.Object,
             _notificationPlayerMock.Object,
             CreateServiceScopeFactory(),
+            textFilter: null,
             soundPath: null);
 
         // Act
@@ -156,16 +159,14 @@ public class TranscriptionCoordinatorTests : IDisposable
             _transcriberMock.Object,
             _notificationPlayerMock.Object,
             CreateServiceScopeFactory(),
+            textFilter: null,
             soundPath: null);
 
         // Act
         var result = await coordinator.TranscribeWithFeedbackAsync(audioData);
 
-        // Wait for background task to complete
-        await Task.Delay(100);
-
-        // Assert - Returns original Whisper text (Mistral correction runs in background)
-        Assert.Equal("Original Whisper text", result.Text);
+        // Assert - CRITICAL: Now returns Mistral-corrected text (synchronous await)
+        Assert.Equal("Corrected by Mistral", result.Text);
         _repositoryMock.Verify(r => r.SaveAsync(
             "Original Whisper text",
             It.IsInRange(900, 1100, Moq.Range.Inclusive), // ~1000ms duration
@@ -198,16 +199,16 @@ public class TranscriptionCoordinatorTests : IDisposable
             _transcriberMock.Object,
             _notificationPlayerMock.Object,
             CreateServiceScopeFactory(),
+            textFilter: null,
             soundPath: null);
 
         // Act
-        await coordinator.TranscribeWithFeedbackAsync(audioData);
+        var result = await coordinator.TranscribeWithFeedbackAsync(audioData);
 
-        // Wait for background task
-        await Task.Delay(100);
+        // Assert - CRITICAL TEST: Returns Mistral-corrected text
+        Assert.Equal("Corrected text", result.Text);
 
-        // Assert - CRITICAL TEST: Mistral should receive original Whisper text
-        // TODO: This test will FAIL because we should pass FILTERED text, not original!
+        // Verify Mistral was called with original Whisper text
         _llmCorrectionMock.Verify(l => l.CorrectTranscriptionAsync(
             456,
             "Original Whisper text",
@@ -229,6 +230,7 @@ public class TranscriptionCoordinatorTests : IDisposable
             _transcriberMock.Object,
             _notificationPlayerMock.Object,
             CreateServiceScopeFactory(),
+            textFilter: null,
             soundPath: null);
 
         // Act
@@ -259,6 +261,7 @@ public class TranscriptionCoordinatorTests : IDisposable
             _transcriberMock.Object,
             _notificationPlayerMock.Object,
             CreateServiceScopeFactory(),
+            textFilter: null,
             soundPath: null);
 
         // Act
@@ -291,6 +294,7 @@ public class TranscriptionCoordinatorTests : IDisposable
             _transcriberMock.Object,
             _notificationPlayerMock.Object,
             CreateServiceScopeFactory(),
+            textFilter: null,
             soundPath: _testSoundPath);
 
         // Act
@@ -316,6 +320,7 @@ public class TranscriptionCoordinatorTests : IDisposable
             _transcriberMock.Object,
             _notificationPlayerMock.Object,
             CreateServiceScopeFactory(),
+            textFilter: null,
             soundPath: null);
 
         // Act
@@ -345,6 +350,7 @@ public class TranscriptionCoordinatorTests : IDisposable
             _transcriberMock.Object,
             _notificationPlayerMock.Object,
             CreateServiceScopeFactory(),
+            textFilter: null,
             soundPath: null);
 
         // Act
@@ -384,6 +390,7 @@ public class TranscriptionCoordinatorTests : IDisposable
             _transcriberMock.Object,
             _notificationPlayerMock.Object,
             CreateServiceScopeFactory(),
+            textFilter: null,
             soundPath: null);
 
         // Act
@@ -406,6 +413,7 @@ public class TranscriptionCoordinatorTests : IDisposable
             _transcriberMock.Object,
             _notificationPlayerMock.Object,
             CreateServiceScopeFactory(),
+            textFilter: null,
             soundPath: _testSoundPath);
 
         // Act & Assert - Should not throw
@@ -421,6 +429,7 @@ public class TranscriptionCoordinatorTests : IDisposable
             _transcriberMock.Object,
             _notificationPlayerMock.Object,
             CreateServiceScopeFactory(),
+            textFilter: null,
             soundPath: null);
 
         // Act & Assert
