@@ -6,11 +6,24 @@ using Olbrasoft.PushToTalk.WindowManagement;
 namespace Olbrasoft.PushToTalk.TextInput;
 
 /// <summary>
-/// Text typer implementation using clipboard + dotool for Linux Wayland.
-/// Saves clipboard content, pastes text, then restores original clipboard.
-/// This approach supports full Unicode including Czech diacritics (háčky, čárky).
-/// Automatically detects terminal windows and uses appropriate paste shortcut.
+/// Text typer implementation using clipboard + dotool for Linux Wayland/X11.
 /// </summary>
+/// <remarks>
+/// <para>
+/// Uses a clipboard-based approach: saves current clipboard, copies text, pastes via dotool, then restores clipboard.
+/// This approach supports full Unicode including Czech diacritics (háčky, čárky).
+/// </para>
+/// <para>
+/// Dependencies:
+/// - <see cref="IClipboardManager"/>: Handles clipboard save/restore operations (wl-clipboard or xclip)
+/// - <see cref="ITerminalDetector"/>: Detects terminal windows to use correct paste shortcut (Ctrl+Shift+V vs Ctrl+V)
+/// </para>
+/// <para>
+/// External tools required:
+/// - dotool: Linux keyboard/mouse input simulation tool
+/// - wl-copy/wl-paste or xclip: Clipboard utilities
+/// </para>
+/// </remarks>
 public class DotoolTextTyper : ITextTyper
 {
     private readonly IClipboardManager _clipboardManager;
@@ -34,6 +47,10 @@ public class DotoolTextTyper : ITextTyper
     }
 
     /// <inheritdoc/>
+    /// <remarks>
+    /// Checks availability of required external tools: dotool and wl-copy.
+    /// Returns false if either tool is not installed or not in PATH.
+    /// </remarks>
     public bool IsAvailable
     {
         get
