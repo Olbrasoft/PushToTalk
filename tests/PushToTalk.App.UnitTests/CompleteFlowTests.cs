@@ -137,7 +137,7 @@ public class CompleteFlowTests : IDisposable
         textFilterMock.Setup(f => f.Apply(whisperText))
             .Returns(expectedFilteredText); // "prasátka" → "PraG"
 
-        var coordinator = new TranscriptionCoordinator(
+        using var coordinator = new TranscriptionCoordinator(
             _coordinatorLoggerMock.Object,
             _transcriberMock.Object,
             _notificationPlayerMock.Object,
@@ -196,7 +196,7 @@ public class CompleteFlowTests : IDisposable
             .Callback<string, CancellationToken>((text, ct) => actualTypedText = text)
             .Returns(Task.CompletedTask);
 
-        var coordinator = new TranscriptionCoordinator(
+        using var coordinator = new TranscriptionCoordinator(
             _coordinatorLoggerMock.Object,
             _transcriberMock.Object,
             _notificationPlayerMock.Object,
@@ -209,7 +209,7 @@ public class CompleteFlowTests : IDisposable
             _textTyperMock.Object,
             textFilter: null);
 
-        var dictationService = new DictationService(
+        using var dictationService = new DictationService(
             _dictationLoggerMock.Object,
             _keyboardMonitorMock.Object,
             _keySimulatorMock.Object,
@@ -282,7 +282,7 @@ public class CompleteFlowTests : IDisposable
             })
             .Returns(Task.Delay(50)); // Each sound loop iteration takes 50ms
 
-        var coordinator = new TranscriptionCoordinator(
+        using var coordinator = new TranscriptionCoordinator(
             _coordinatorLoggerMock.Object,
             _transcriberMock.Object,
             _notificationPlayerMock.Object,
@@ -335,7 +335,7 @@ public class CompleteFlowTests : IDisposable
         textFilterMock.Setup(f => f.Apply(whisperText))
             .Returns(expectedFilteredText); // "kód" → "code"
 
-        var coordinator = new TranscriptionCoordinator(
+        using var coordinator = new TranscriptionCoordinator(
             _coordinatorLoggerMock.Object,
             _transcriberMock.Object,
             _notificationPlayerMock.Object,

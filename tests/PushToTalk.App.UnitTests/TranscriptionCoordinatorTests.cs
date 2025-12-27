@@ -68,7 +68,7 @@ public class TranscriptionCoordinatorTests : IDisposable
         _transcriberMock.Setup(t => t.TranscribeAsync(audioData, It.IsAny<CancellationToken>()))
             .ReturnsAsync(expectedResult);
 
-        var coordinator = new TranscriptionCoordinator(
+        using var coordinator = new TranscriptionCoordinator(
             _loggerMock.Object,
             _transcriberMock.Object,
             _notificationPlayerMock.Object,
@@ -89,7 +89,7 @@ public class TranscriptionCoordinatorTests : IDisposable
     public async Task TranscribeWithFeedbackAsync_WithNullAudio_ShouldReturnFailure()
     {
         // Arrange
-        var coordinator = new TranscriptionCoordinator(
+        using var coordinator = new TranscriptionCoordinator(
             _loggerMock.Object,
             _transcriberMock.Object,
             _notificationPlayerMock.Object,
@@ -109,7 +109,7 @@ public class TranscriptionCoordinatorTests : IDisposable
     public async Task TranscribeWithFeedbackAsync_WithEmptyAudio_ShouldReturnFailure()
     {
         // Arrange
-        var coordinator = new TranscriptionCoordinator(
+        using var coordinator = new TranscriptionCoordinator(
             _loggerMock.Object,
             _transcriberMock.Object,
             _notificationPlayerMock.Object,
@@ -151,7 +151,7 @@ public class TranscriptionCoordinatorTests : IDisposable
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync("Corrected by Mistral");
 
-        var coordinator = new TranscriptionCoordinator(
+        using var coordinator = new TranscriptionCoordinator(
             _loggerMock.Object,
             _transcriberMock.Object,
             _notificationPlayerMock.Object,
@@ -194,7 +194,7 @@ public class TranscriptionCoordinatorTests : IDisposable
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync("Corrected text");
 
-        var coordinator = new TranscriptionCoordinator(
+        using var coordinator = new TranscriptionCoordinator(
             _loggerMock.Object,
             _transcriberMock.Object,
             _notificationPlayerMock.Object,
@@ -226,7 +226,7 @@ public class TranscriptionCoordinatorTests : IDisposable
         _transcriberMock.Setup(t => t.TranscribeAsync(audioData, It.IsAny<CancellationToken>()))
             .ReturnsAsync(failedResult);
 
-        var coordinator = new TranscriptionCoordinator(
+        using var coordinator = new TranscriptionCoordinator(
             _loggerMock.Object,
             _transcriberMock.Object,
             _notificationPlayerMock.Object,
@@ -257,7 +257,7 @@ public class TranscriptionCoordinatorTests : IDisposable
         _transcriberMock.Setup(t => t.TranscribeAsync(audioData, It.IsAny<CancellationToken>()))
             .ReturnsAsync(whitespaceResult);
 
-        var coordinator = new TranscriptionCoordinator(
+        using var coordinator = new TranscriptionCoordinator(
             _loggerMock.Object,
             _transcriberMock.Object,
             _notificationPlayerMock.Object,
@@ -290,7 +290,7 @@ public class TranscriptionCoordinatorTests : IDisposable
             .Callback(() => playCallCount++)
             .Returns(Task.CompletedTask);
 
-        var coordinator = new TranscriptionCoordinator(
+        using var coordinator = new TranscriptionCoordinator(
             _loggerMock.Object,
             _transcriberMock.Object,
             _notificationPlayerMock.Object,
@@ -316,7 +316,7 @@ public class TranscriptionCoordinatorTests : IDisposable
         _transcriberMock.Setup(t => t.TranscribeAsync(audioData, It.IsAny<CancellationToken>()))
             .ReturnsAsync(result);
 
-        var coordinator = new TranscriptionCoordinator(
+        using var coordinator = new TranscriptionCoordinator(
             _loggerMock.Object,
             _transcriberMock.Object,
             _notificationPlayerMock.Object,
@@ -345,7 +345,7 @@ public class TranscriptionCoordinatorTests : IDisposable
                 It.IsAny<CancellationToken>()))
             .ThrowsAsync(new Exception("Database error"));
 
-        var coordinator = new TranscriptionCoordinator(
+        using var coordinator = new TranscriptionCoordinator(
             _loggerMock.Object,
             _transcriberMock.Object,
             _notificationPlayerMock.Object,
@@ -385,7 +385,7 @@ public class TranscriptionCoordinatorTests : IDisposable
                 It.IsAny<CancellationToken>()))
             .ThrowsAsync(new Exception("LLM API error"));
 
-        var coordinator = new TranscriptionCoordinator(
+        using var coordinator = new TranscriptionCoordinator(
             _loggerMock.Object,
             _transcriberMock.Object,
             _notificationPlayerMock.Object,
@@ -408,7 +408,7 @@ public class TranscriptionCoordinatorTests : IDisposable
     public void Dispose_ShouldStopSoundLoop()
     {
         // Arrange
-        var coordinator = new TranscriptionCoordinator(
+        using var coordinator = new TranscriptionCoordinator(
             _loggerMock.Object,
             _transcriberMock.Object,
             _notificationPlayerMock.Object,
@@ -424,7 +424,7 @@ public class TranscriptionCoordinatorTests : IDisposable
     public void Dispose_MultipleCalls_ShouldNotThrow()
     {
         // Arrange
-        var coordinator = new TranscriptionCoordinator(
+        using var coordinator = new TranscriptionCoordinator(
             _loggerMock.Object,
             _transcriberMock.Object,
             _notificationPlayerMock.Object,
