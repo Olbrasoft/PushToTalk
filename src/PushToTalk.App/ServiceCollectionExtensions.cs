@@ -137,6 +137,9 @@ public static class ServiceCollectionExtensions
         // State machine for dictation state management (State pattern)
         services.AddSingleton<Olbrasoft.PushToTalk.App.StateMachine.IDictationStateMachine, Olbrasoft.PushToTalk.App.StateMachine.DictationStateMachine>();
 
+        // CapsLock LED synchronizer (for web remote control)
+        services.AddSingleton<Olbrasoft.PushToTalk.App.Keyboard.ICapsLockSynchronizer, Olbrasoft.PushToTalk.App.Keyboard.CapsLockSynchronizer>();
+
         // Dictation service (orchestrates recording, transcription, and output)
         services.AddSingleton(sp =>
         {

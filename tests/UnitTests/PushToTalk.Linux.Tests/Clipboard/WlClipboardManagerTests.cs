@@ -24,34 +24,34 @@ public class WlClipboardManagerTests
         Assert.Equal("logger", exception.ParamName);
     }
 
-    [SkipOnCIFact]
-    public async Task GetClipboardAsync_WhenClipboardHasContent_ReturnsContent()
-    {
-        // Arrange - First set some content to clipboard
-        await _clipboardManager.SetClipboardAsync("test content");
-        await Task.Delay(100); // Wait for clipboard to settle
-
-        // Act
-        var result = await _clipboardManager.GetClipboardAsync();
-
-        // Assert
-        Assert.NotNull(result);
-        Assert.Equal("test content", result);
-    }
+  
 
     [SkipOnCIFact]
     public async Task SetClipboardAsync_WithValidContent_SetsClipboardSuccessfully()
     {
-        // Arrange
-        var testContent = "Hello, World!";
+        // Arrange - Save original clipboard content
+        var originalContent = await _clipboardManager.GetClipboardAsync();
 
-        // Act
-        await _clipboardManager.SetClipboardAsync(testContent);
-        await Task.Delay(100); // Wait for clipboard to settle
+        try
+        {
+            var testContent = "Hello, World!";
 
-        // Assert - Verify by reading it back
-        var result = await _clipboardManager.GetClipboardAsync();
-        Assert.Equal(testContent, result);
+            // Act
+            await _clipboardManager.SetClipboardAsync(testContent);
+            await Task.Delay(100); // Wait for clipboard to settle
+
+            // Assert - Verify by reading it back
+            var result = await _clipboardManager.GetClipboardAsync();
+            Assert.Equal(testContent, result);
+        }
+        finally
+        {
+            // Cleanup - Restore original clipboard content
+            if (!string.IsNullOrEmpty(originalContent))
+            {
+                await _clipboardManager.SetClipboardAsync(originalContent);
+            }
+        }
     }
 
     [Fact]
@@ -65,28 +65,55 @@ public class WlClipboardManagerTests
     [SkipOnCIFact]
     public async Task SetClipboardAsync_WithEmptyString_SetsEmptyClipboard()
     {
-        // Act
-        await _clipboardManager.SetClipboardAsync("");
-        await Task.Delay(100);
+        // Arrange - Save original clipboard content
+        var originalContent = await _clipboardManager.GetClipboardAsync();
 
-        // Assert
-        var result = await _clipboardManager.GetClipboardAsync();
-        Assert.Equal("", result);
+        try
+        {
+            // Act
+            await _clipboardManager.SetClipboardAsync("");
+            await Task.Delay(100);
+
+            // Assert
+            var result = await _clipboardManager.GetClipboardAsync();
+            Assert.Equal("", result);
+        }
+        finally
+        {
+            // Cleanup - Restore original clipboard content
+            if (!string.IsNullOrEmpty(originalContent))
+            {
+                await _clipboardManager.SetClipboardAsync(originalContent);
+            }
+        }
     }
 
     [SkipOnCIFact]
     public async Task SetClipboardAsync_WithUnicodeContent_HandlesUnicodeCorrectly()
     {
-        // Arrange
-        var unicodeContent = "Příliš žluťoučký kůň úpěl ďábelské ódy";
+        // Arrange - Save original clipboard content
+        var originalContent = await _clipboardManager.GetClipboardAsync();
 
-        // Act
-        await _clipboardManager.SetClipboardAsync(unicodeContent);
-        await Task.Delay(100);
+        try
+        {
+            var unicodeContent = "Příliš žluťoučký kůň úpěl ďábelské ódy";
 
-        // Assert
-        var result = await _clipboardManager.GetClipboardAsync();
-        Assert.Equal(unicodeContent, result);
+            // Act
+            await _clipboardManager.SetClipboardAsync(unicodeContent);
+            await Task.Delay(100);
+
+            // Assert
+            var result = await _clipboardManager.GetClipboardAsync();
+            Assert.Equal(unicodeContent, result);
+        }
+        finally
+        {
+            // Cleanup - Restore original clipboard content
+            if (!string.IsNullOrEmpty(originalContent))
+            {
+                await _clipboardManager.SetClipboardAsync(originalContent);
+            }
+        }
     }
 
     [SkipOnCIFact]
