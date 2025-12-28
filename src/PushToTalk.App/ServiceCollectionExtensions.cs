@@ -73,7 +73,11 @@ public static class ServiceCollectionExtensions
         {
             var logger = sp.GetRequiredService<ILogger<SpeechToTextGrpcClient>>();
             var serviceUrl = Environment.GetEnvironmentVariable("SPEECHTOTEXT_SERVICE_URL") ?? "http://localhost:5052";
-            return new SpeechToTextGrpcClient(logger, serviceUrl, options.WhisperLanguage);
+            return new SpeechToTextGrpcClient(
+                logger,
+                serviceUrl,
+                options.WhisperLanguage,
+                "ggml-large-v3-turbo.bin");
         });
 
         // Environment provider for display server detection

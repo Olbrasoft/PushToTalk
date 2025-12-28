@@ -16,18 +16,21 @@ public sealed class SpeechToTextGrpcClient : ISpeechTranscriber
     private readonly GrpcChannel _channel;
     private readonly SpeechToText.Service.SpeechToText.SpeechToTextClient _grpcClient;
     private readonly string _language;
+    private readonly string? _model;
     private bool _disposed;
 
     public SpeechToTextGrpcClient(
         ILogger<SpeechToTextGrpcClient> logger,
         string serviceUrl,
-        string language = "cs")
+        string language = "cs",
+        string? model = null)
     {
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         _language = language ?? "cs";
+        _model = model;
 
-        _logger.LogInformation("Initializing SpeechToText gRPC client: {Url}, Language: {Language}",
-            serviceUrl, _language);
+        _logger.LogInformation("Initializing SpeechToText gRPC client: {Url}, Language: {Language}, Model: {Model}",
+            serviceUrl, _language, _model ?? "(default)");
 
         _channel = GrpcChannel.ForAddress(serviceUrl);
         _grpcClient = new SpeechToText.Service.SpeechToText.SpeechToTextClient(_channel);
@@ -42,13 +45,20 @@ public sealed class SpeechToTextGrpcClient : ISpeechTranscriber
 
         try
         {
-            _logger.LogDebug("gRPC Transcribe request (audio size: {Size} bytes)", audioData.Length);
+            _logger.LogDebug("gRPC Transcribe request (audio size: {Size} bytes, model: {Model})",
+                audioData.Length, _model ?? "(default)");
 
             var request = new SpeechToText.Service.TranscribeRequest
             {
                 Audio = ByteString.CopyFrom(audioData),
                 Language = _language
             };
+
+            // Set model parameter if specified (overrides service default)
+            if (!string.IsNullOrEmpty(_model))
+            {
+                request.Model = _model;
+            }
 
             var response = await _grpcClient.TranscribeAsync(request, cancellationToken: cancellationToken);
 
