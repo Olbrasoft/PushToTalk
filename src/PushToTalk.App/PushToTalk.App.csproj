@@ -17,7 +17,7 @@
     <PackageId>push-to-talk</PackageId>
     <!-- Version is auto-calculated in CI/CD as 1.0.${{ github.run_number }} -->
     <!-- This is fallback for local builds only -->
-    <Version>1.0.1</Version>
+    <Version>1.0.2</Version>
     <Description>Voice transcription using Whisper AI</Description>
     <Authors>Olbrasoft</Authors>
     <DebMaintainer>Olbrasoft</DebMaintainer>
@@ -52,7 +52,7 @@
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
     <!-- D-Bus source generator for DBusMenu (context menu) -->
-    <PackageReference Include="Tmds.DBus.Protocol" Version="0.22.0" />
+    <PackageReference Include="Tmds.DBus.Protocol" Version="0.23.0" />
     <PackageReference Include="Tmds.DBus.SourceGenerator" Version="0.0.21" PrivateAssets="all" />
   </ItemGroup>
 
